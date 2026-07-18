@@ -1,6 +1,10 @@
 # main.py
 import cv2
 import os  # 🔥 Added to check if video files exist
+import argparse
+import time
+import datetime
+import sqlite3
 from config import CAMERA_INDEX, WINDOW_NAME
 from core.pose_detector import PoseDetector
 from core.injury_detection import InjuryDetector
@@ -10,8 +14,86 @@ from exercises.exercise_dict import WORKOUT_PLAN, ALL_EXERCISES
 from utils.angles import calculate_angle
 from utils.display import draw_dashboard
 
+# Parse command line arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--user_id', type=int, default=1, help='User ID')
+parser.add_argument('--exercise', type=str, default='', help='Exercise key to start directly')
+args, unknown = parser.parse_known_args()
+USER_ID = args.user_id
+
+def save_workout_session(user_id, exercise, reps, sets, duration_mins, accuracy_pct):
+    """Saves session metrics directly to the SQLite gym database."""
+    if reps <= 0:
+        return
+    try:
+        db_path = 'gym_trainer.db'
+        # Handle cases where backend folder has the DB or root has it
+        if not os.path.exists(db_path) and os.path.exists('backend/gym_trainer.db'):
+            db_path = 'backend/gym_trainer.db'
+            
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        # Calculate calories
+        calories = round(duration_mins * 7.5, 1)
+        fatigue = 40.0
+        risk = "Low"
+        if accuracy_pct < 75:
+            risk = "Medium"
+            
+        now = datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+        
+        # Log workout history
+        cursor.execute('''
+            INSERT INTO workout_histories (user_id, exercise, reps, sets, duration, accuracy, date, calories_burned, avg_fatigue, risk_score)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, exercise, reps, sets, duration_mins, accuracy_pct, now, calories, fatigue, risk))
+        
+        # Query profile metrics
+        cursor.execute('SELECT weight, bmi FROM user_profiles WHERE user_id = ?', (user_id,))
+        profile = cursor.fetchone()
+        weight, bmi = 70.0, 22.8
+        if profile:
+            weight, bmi = profile[0], profile[1]
+            
+        # Log progress log
+        cursor.execute('''
+            INSERT INTO progress_logs (user_id, date, weight, bmi, calories_burned, duration)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, now, weight, bmi, calories, duration_mins))
+        
+        # Update daily intake calories
+        today = datetime.date.today().strftime('%Y-%m-%d')
+        cursor.execute('SELECT id, calories_kcal FROM daily_intakes WHERE user_id = ? AND date = ?', (user_id, today))
+        intake = cursor.fetchone()
+        if intake:
+            new_cals = intake[1] + int(calories)
+            cursor.execute('UPDATE daily_intakes SET calories_kcal = ? WHERE id = ?', (new_cals, intake[0]))
+        else:
+            cursor.execute('INSERT INTO daily_intakes (user_id, date, water_liters, protein_grams, calories_kcal) VALUES (?, ?, 0.0, 0, ?)', (user_id, today, int(calories)))
+            
+        conn.commit()
+        conn.close()
+        print(f"Logged Local Session: {exercise} | Reps: {reps} | Sets: {sets} | Accuracy: {int(accuracy_pct)}%")
+    except Exception as e:
+        print(f"Database logging exception: {str(e)}")
+
 # Initialize Modules
-cap = cv2.VideoCapture(CAMERA_INDEX)
+print(f"Initializing webcam index: {CAMERA_INDEX}...")
+# Try DirectShow (cv2.CAP_DSHOW) first on Windows as it is much more robust and fast
+cap = cv2.VideoCapture(CAMERA_INDEX, cv2.CAP_DSHOW)
+
+# Fallback if DirectShow fails to open at all
+if not cap.isOpened():
+    cap.release()
+    cap = cv2.VideoCapture(CAMERA_INDEX)
+
+if not cap.isOpened():
+    print(f"\n❌ ERROR: Could not open webcam at index {CAMERA_INDEX}.")
+    print("👉 Another app (like Chrome, Edge, or Zoom) might be using your camera. Please close any tabs/apps using the webcam!")
+    print("👉 If you have multiple webcams, edit 'config.py' and change CAMERA_INDEX to 1 or 2.")
+    input("\nPress ENTER to exit...")
+    exit(1)
 
 # Request High Definition from your webcam
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -27,18 +109,50 @@ cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
 cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
 # App State Management
-app_state = "MENU_CATEGORY"
 categories = list(WORKOUT_PLAN.keys())
 selected_category = ""
 exercises_in_category = []
 current_exercise = ""
-
-# 🔥 Variable to hold the demo video
 demo_cap = None 
+
+if args.exercise:
+    # Find the category containing the specified exercise
+    found = False
+    for cat, ex_dict in WORKOUT_PLAN.items():
+        if args.exercise in ex_dict:
+            selected_category = cat
+            exercises_in_category = list(ex_dict.keys())
+            current_exercise = args.exercise
+            found = True
+            break
+            
+    if found:
+        # Check for Demo Video
+        video_path = f"assets/videos/{current_exercise}.mp4"
+        if os.path.exists(video_path):
+            demo_cap = cv2.VideoCapture(video_path)
+            app_state = "DEMO_VIDEO"
+        else:
+            app_state = "TRACKING"
+    else:
+        print(f"⚠️ Warning: Specified exercise '{args.exercise}' not found in WORKOUT_PLAN. Falling back to menu.")
+        app_state = "MENU_CATEGORY"
+else:
+    app_state = "MENU_CATEGORY"
+
+# Session tracking helpers
+session_active = False
+session_start_time = 0
+session_accuracies = []
+session_reps = 0
+session_sets = 1 
 
 while True:
     ret, frame = cap.read()
-    if not ret: break
+    if not ret:
+        print("\n❌ ERROR: Webcam frame read failed. The camera may have been unplugged or is locked by another process.")
+        input("\nPress ENTER to exit...")
+        break
 
     # Flip webcam frame horizontally for a mirror effect
     frame = cv2.flip(frame, 1)
@@ -129,6 +243,13 @@ while True:
     # 4. CORE TRACKING ENGINE
     # -------------------------------------
     elif app_state == "TRACKING":
+        if not session_active:
+            session_active = True
+            session_start_time = time.time()
+            session_accuracies = []
+            session_reps = 0
+            session_sets = 1
+            
         frame = detector.findPose(frame, draw=True)
         lmList = detector.getLandmarks(frame)
 
@@ -183,6 +304,10 @@ while True:
                 score = int(100 - (abs(stats["ideal"] - active_angle) * 1.5))
                 score = max(0, min(100, score))
 
+                session_reps = reps
+                session_sets = max(1, int(reps / 12) + 1)
+                session_accuracies.append(score)
+
                 progress_range = abs(stats["up"] - stats["down"])
                 progress = int(abs(active_angle - stats["up"]) / progress_range * 100) if progress_range != 0 else 0
                 progress = max(0, min(100, progress))
@@ -196,12 +321,22 @@ while True:
                 clean_name = current_exercise.replace("_", " ")
                 frame = draw_dashboard(frame, clean_name, reps, stage, score, tip, progress, warning_msg, "")
 
-        cv2.putText(frame, "Press 'M' to change exercise", (10, frame.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-        if key == ord('m') or key == ord('M'): 
+        if key == ord('m') or key == ord('M'):
+            if session_active:
+                duration_mins = (time.time() - session_start_time) / 60.0
+                avg_accuracy = int(sum(session_accuracies) / len(session_accuracies)) if session_accuracies else 85
+                save_workout_session(USER_ID, current_exercise, session_reps, session_sets, duration_mins, avg_accuracy)
+                session_active = False
             app_state = "MENU_CATEGORY"
 
     cv2.imshow(WINDOW_NAME, frame)
-    if key == 27: break # ESC key to exit
+    if key == 27: 
+        if session_active:
+            duration_mins = (time.time() - session_start_time) / 60.0
+            avg_accuracy = int(sum(session_accuracies) / len(session_accuracies)) if session_accuracies else 85
+            save_workout_session(USER_ID, current_exercise, session_reps, session_sets, duration_mins, avg_accuracy)
+            session_active = False
+        break # ESC key to exit
 
 cap.release()
 if demo_cap is not None:

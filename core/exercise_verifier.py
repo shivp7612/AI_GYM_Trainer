@@ -22,10 +22,10 @@ EXERCISE_CATEGORY_MAP = {
     "front_raise":              "Shoulders",
     "upright_row":              "Shoulders",
     "face_pull":                "Shoulders",
-    "bicep_curl":               "Arms",
-    "tricep_pushdown":          "Arms",
-    "overhead_tricep_extension":"Arms",
-    "dips":                     "Arms",
+    "bicep_curl":               "Arms_Forearms",
+    "tricep_pushdown":          "Arms_Forearms",
+    "overhead_tricep_extension":"Arms_Forearms",
+    "dips":                     "Arms_Forearms",
     "crunches":                 "Core",
     "leg_raises":               "Core",
     "russian_twist":            "Core",
@@ -36,8 +36,12 @@ EXERCISE_CATEGORY_MAP = {
     "leg_curl":                 "Legs",
     "hip_thrust":               "Legs",
     "calf_raise":               "Legs",
-    "shrugs":                   "Traps_Forearms",
-    "wrist_curl":               "Traps_Forearms",
+    "shrugs":                   "Arms_Forearms",
+    "wrist_curl":               "Arms_Forearms",
+    "pushups":                  "Chest",
+    "dumbbell_fly":             "Chest",
+    "dumbbell_bench_press":     "Chest",
+    "deadlift":                 "Back",
 }
 
 
@@ -123,10 +127,13 @@ class ExerciseVerifier:
         r_elbow_above_shoulder = re[1] < rs[1]
 
         # ── DISPATCH ──────────────────────────────────────────────
-        if category == "Arms":
-            return self._check_arms(avg_abduction, avg_torso,
-                                    l_wrist_below_shoulder, r_wrist_below_shoulder,
-                                    exercise)
+        if category == "Arms_Forearms":
+            if exercise in ("shrugs", "wrist_curl"):
+                return self._check_traps_forearms(avg_abduction, avg_elbow, exercise)
+            else:
+                return self._check_arms(avg_abduction, avg_torso,
+                                        l_wrist_below_shoulder, r_wrist_below_shoulder,
+                                        exercise)
 
         if category == "Chest":
             return self._check_chest(avg_abduction, avg_torso,
@@ -149,9 +156,6 @@ class ExerciseVerifier:
 
         if category == "Core":
             return self._check_core(avg_torso, exercise)
-
-        if category == "Traps_Forearms":
-            return self._check_traps_forearms(avg_abduction, avg_elbow, exercise)
 
         return True, ""
 

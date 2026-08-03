@@ -24,6 +24,7 @@ class UserProfileCreate(BaseModel):
     equipment: List[str]
     injury: List[str]
     workout_days: int
+    diet_pref: str
 
 class UserProfileResponse(BaseModel):
     id: int
@@ -37,6 +38,7 @@ class UserProfileResponse(BaseModel):
     equipment: List[str]
     injury: List[str]
     workout_days: int
+    diet_pref: str
     
     # Calculated properties
     bmi: float

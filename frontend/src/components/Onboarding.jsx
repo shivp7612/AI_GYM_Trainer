@@ -1,6 +1,6 @@
 // frontend/src/components/Onboarding.jsx
 import React, { useState } from 'react';
-import { ChevronRight, Award, User, Target, Zap, Calendar, Heart, ShieldAlert } from 'lucide-react';
+import { ChevronRight, Award, User, Target, Calendar, Heart } from 'lucide-react';
 
 export default function Onboarding({ onFinish }) {
   const [step, setStep] = useState(1);
@@ -10,30 +10,15 @@ export default function Onboarding({ onFinish }) {
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [goal, setGoal] = useState('Muscle Gain');
-  const [experience, setExperience] = useState('Intermediate');
+  const experience = 'Intermediate';
   const [workoutDays, setWorkoutDays] = useState(4);
-  const [selectedEquipment, setSelectedEquipment] = useState(['Bodyweight']);
+  const selectedEquipment = ['Gym'];
   const [selectedInjuries, setSelectedInjuries] = useState(['None']);
+  const [dietPref, setDietPref] = useState('Veg');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const equipmentOptions = ['Gym', 'Home', 'Dumbbells', 'Resistance Bands', 'Bodyweight'];
   const injuryOptions = ['Shoulder', 'Knee', 'Back', 'None'];
-
-  const toggleEquipment = (item) => {
-    if (item === 'Bodyweight') {
-      setSelectedEquipment(['Bodyweight']);
-      return;
-    }
-    let updated = [...selectedEquipment].filter(x => x !== 'Bodyweight');
-    if (updated.includes(item)) {
-      updated = updated.filter(x => x !== item);
-      if (updated.length === 0) updated = ['Bodyweight'];
-    } else {
-      updated.push(item);
-    }
-    setSelectedEquipment(updated);
-  };
 
   const toggleInjury = (item) => {
     if (item === 'None') {
@@ -80,7 +65,8 @@ export default function Onboarding({ onFinish }) {
         experience,
         workout_days: parseInt(workoutDays),
         equipment: selectedEquipment,
-        injury: selectedInjuries
+        injury: selectedInjuries,
+        diet_pref: dietPref
       };
 
       const profRes = await fetch(`http://localhost:8000/api/profile?user_id=${user.id}`, {
@@ -90,7 +76,7 @@ export default function Onboarding({ onFinish }) {
       });
 
       if (!profRes.ok) throw new Error('Profile configuration failed');
-      const profile = await profRes.json();
+      await profRes.json();
 
       // Save to localStorage
       localStorage.setItem('gym_user_id', user.id);
@@ -127,11 +113,11 @@ export default function Onboarding({ onFinish }) {
         {/* Progress header */}
         {step > 1 && (
           <div className="mb-8 flex items-center justify-between">
-            <span className="text-xs font-semibold text-brand-purple tracking-widest uppercase">Step {step - 1} of 5</span>
+            <span className="text-xs font-semibold text-brand-purple tracking-widest uppercase">Step {step - 1} of 4</span>
             <div className="w-2/3 h-1.5 bg-dark-border rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-brand-purple to-brand-mint transition-all duration-300"
-                style={{ width: `${((step - 1) / 5) * 100}%` }}
+                style={{ width: `${((step - 1) / 4) * 100}%` }}
               ></div>
             </div>
           </div>
@@ -242,11 +228,11 @@ export default function Onboarding({ onFinish }) {
           <div>
             <div className="flex items-center gap-2 mb-6">
               <Target className="w-5 h-5 text-brand-purple" />
-              <h2 className="text-xl font-bold">Fitness Goal</h2>
+              <h2 className="text-xl font-bold">Fitness Goal & Diet</h2>
             </div>
             
             <div className="space-y-3">
-              {['Weight Loss', 'Muscle Gain', 'Strength', 'General Fitness', 'Rehabilitation'].map((g) => (
+              {['Weight Loss', 'Muscle Gain', 'Strength', 'Rehabilitation'].map((g) => (
                 <div
                   key={g}
                   onClick={() => setGoal(g)}
@@ -264,60 +250,37 @@ export default function Onboarding({ onFinish }) {
               ))}
             </div>
 
+            {/* Dietary Preference Section */}
+            <div className="mt-6 pt-4 border-t border-white/5 space-y-4 animate-fade-in-up">
+              <label className="text-xs font-semibold text-dark-muted block uppercase tracking-wider">Dietary Preference</label>
+              <div className="grid grid-cols-2 gap-3">
+                {['Veg', 'Non-Veg'].map((pref) => (
+                  <button
+                    key={pref}
+                    onClick={() => setDietPref(pref)}
+                    className={`py-3.5 rounded-xl border text-center font-bold text-sm transition-all ${
+                      dietPref === pref 
+                        ? 'bg-brand-mint/10 border-brand-mint text-brand-mint' 
+                        : 'bg-dark-border/20 border-white/5 text-dark-muted hover:border-white/10 hover:text-slate-200'
+                    }`}
+                  >
+                    {pref === 'Veg' ? 'Veg (Inc. Egg)' : 'Non-Veg'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
               onClick={nextStep}
-              className="w-full mt-8 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
+              className="w-full mt-6 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* --- SCREEN 4: EXPERIENCE --- */}
+        {/* --- SCREEN 4: AVAILABILITY --- */}
         {step === 4 && (
-          <div>
-            <div className="flex items-center gap-2 mb-6">
-              <Zap className="w-5 h-5 text-brand-purple" />
-              <h2 className="text-xl font-bold">Experience Level</h2>
-            </div>
-            
-            <div className="space-y-3">
-              {['Beginner', 'Intermediate', 'Advanced'].map((lvl) => (
-                <div
-                  key={lvl}
-                  onClick={() => setExperience(lvl)}
-                  className={`px-5 py-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
-                    experience === lvl 
-                      ? 'border-brand-purple bg-brand-purple/10 text-white font-semibold' 
-                      : 'border-white/5 bg-dark-border/20 text-dark-muted hover:border-white/10 hover:text-white'
-                  }`}
-                >
-                  <div>
-                    <span className="block font-semibold">{lvl}</span>
-                    <span className="text-xs text-dark-muted mt-0.5">
-                      {lvl === 'Beginner' && 'Just starting out, focusing on basic movements.'}
-                      {lvl === 'Intermediate' && 'Trained consistently, looking for structure.'}
-                      {lvl === 'Advanced' && 'Highly experienced, targeting progressive limits.'}
-                    </span>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 ml-4 ${experience === lvl ? 'border-brand-purple' : 'border-dark-border'}`}>
-                    {experience === lvl && <div className="w-2.5 h-2.5 bg-brand-purple rounded-full"></div>}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={nextStep}
-              className="w-full mt-8 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
-            >
-              Next <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
-        {/* --- SCREEN 5: AVAILABILITY & EQUIPMENT --- */}
-        {step === 5 && (
           <div className="space-y-5">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="w-5 h-5 text-brand-purple" />
@@ -344,29 +307,6 @@ export default function Onboarding({ onFinish }) {
               </div>
             </div>
 
-            {/* Equipment Selection */}
-            <div className="pt-2">
-              <label className="text-xs font-semibold text-dark-muted block mb-3">Available Equipment</label>
-              <div className="flex flex-wrap gap-2">
-                {equipmentOptions.map((eq) => {
-                  const active = selectedEquipment.includes(eq);
-                  return (
-                    <button
-                      key={eq}
-                      onClick={() => toggleEquipment(eq)}
-                      className={`px-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                        active 
-                          ? 'bg-brand-mint/10 border-brand-mint text-brand-mint' 
-                          : 'bg-dark-border/20 border-white/5 text-dark-muted hover:border-white/10'
-                      }`}
-                    >
-                      {eq}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             <button
               onClick={nextStep}
               className="w-full mt-6 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
@@ -376,8 +316,8 @@ export default function Onboarding({ onFinish }) {
           </div>
         )}
 
-        {/* --- SCREEN 6: INJURIES & FINISH --- */}
-        {step === 6 && (
+        {/* --- SCREEN 5: INJURIES & FINISH --- */}
+        {step === 5 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2">
               <Heart className="w-5 h-5 text-brand-purple" />
@@ -415,7 +355,7 @@ export default function Onboarding({ onFinish }) {
 
             <div className="pt-2 flex gap-3">
               <button
-                onClick={() => setStep(5)}
+                onClick={() => setStep(4)}
                 className="w-1/3 py-4 bg-dark-border/30 hover:bg-dark-border/40 transition-colors text-white font-semibold rounded-2xl"
               >
                 Back

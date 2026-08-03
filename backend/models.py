@@ -32,6 +32,7 @@ class UserProfile(Base):
     equipment = Column(JSON)  # Stores equipment options selected (list of strings)
     injury = Column(JSON)     # Stores injuries checklist (list of strings)
     workout_days = Column(Integer, default=4)
+    diet_pref = Column(String, default="Veg")
     
     # Calculated fields
     bmi = Column(Float)

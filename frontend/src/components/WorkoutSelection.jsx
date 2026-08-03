@@ -51,7 +51,7 @@ export default function WorkoutSelection({ userId, workoutExercises, setView, on
   }
 
   const cleanMuscleName = (name) => {
-    if (name === 'Traps_Forearms') return 'Traps & Forearms';
+    if (name === 'Arms_Forearms') return 'Arms & Forearms';
     return name;
   };
 

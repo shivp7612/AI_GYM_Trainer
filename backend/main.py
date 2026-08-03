@@ -2,6 +2,7 @@
 from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 import os
 import shutil
@@ -82,6 +83,7 @@ def create_profile(profile_in: schemas.UserProfileCreate, user_id: int, db: Sess
         db_profile.equipment = profile_in.equipment
         db_profile.injury = profile_in.injury
         db_profile.workout_days = profile_in.workout_days
+        db_profile.diet_pref = profile_in.diet_pref
     else:
         # Create new profile
         db_profile = models.UserProfile(user_id=user_id, **profile_in.dict())
@@ -126,7 +128,7 @@ def get_dashboard_summary(user_id: int, db: Session = Depends(get_db)):
     today = datetime.date.today()
     intake = db.query(models.DailyIntake).filter(
         models.DailyIntake.user_id == user_id,
-        models.DailyIntake.date == today
+        func.date(models.DailyIntake.date) == today
     ).first()
 
     if not intake:
@@ -141,13 +143,22 @@ def get_dashboard_summary(user_id: int, db: Session = Depends(get_db)):
         goal=profile.goal,
         equipment=profile.equipment,
         injuries=profile.injury,
-        workout_days=profile.workout_days
+        workout_days=profile.workout_days,
+        gender=profile.gender
     )
 
     # Generate custom Indian diet suggestions
-    diet_regime = generate_diet_plan(goal=profile.goal, weight=profile.weight)
+    diet_regime = generate_diet_plan(
+        goal=profile.goal,
+        weight=profile.weight,
+        age=profile.age,
+        gender=profile.gender,
+        height=profile.height,
+        workout_days=profile.workout_days,
+        diet_pref=profile.diet_pref
+    )
 
-    # Calculate mock progress metrics for dashboards
+    # Calculate actual progress metrics for dashboards
     # Count how many sessions performed in past 30 days
     past_month = datetime.datetime.utcnow() - datetime.timedelta(days=30)
     monthly_workouts = db.query(models.WorkoutHistory).filter(
@@ -155,16 +166,78 @@ def get_dashboard_summary(user_id: int, db: Session = Depends(get_db)):
         models.WorkoutHistory.date >= past_month
     ).count()
 
-    streak = 14  # Default static polished workout streak
+    # Calculate actual consecutive days workout streak
+    db_dates = db.query(func.date(models.WorkoutHistory.date)).filter(
+        models.WorkoutHistory.user_id == user_id
+    ).distinct().order_by(func.date(models.WorkoutHistory.date).desc()).all()
+    
+    workout_dates = []
+    for d in db_dates:
+        date_str = d[0]
+        if isinstance(date_str, str):
+            try:
+                date_val = datetime.datetime.strptime(date_str.split()[0], "%Y-%m-%d").date()
+                workout_dates.append(date_val)
+            except Exception:
+                pass
+        elif isinstance(date_str, datetime.date):
+            workout_dates.append(date_str)
+        elif isinstance(date_str, datetime.datetime):
+            workout_dates.append(date_str.date())
+
+    streak = 0
+    if workout_dates:
+        today_date = datetime.date.today()
+        yesterday_date = today_date - datetime.timedelta(days=1)
+        
+        if workout_dates[0] == today_date:
+            streak = 1
+            current_expected = today_date - datetime.timedelta(days=1)
+            for d in workout_dates[1:]:
+                if d == current_expected:
+                    streak += 1
+                    current_expected -= datetime.timedelta(days=1)
+                elif d > current_expected:
+                    continue
+                else:
+                    break
+        elif workout_dates[0] == yesterday_date:
+            streak = 1
+            current_expected = yesterday_date - datetime.timedelta(days=1)
+            for d in workout_dates[1:]:
+                if d == current_expected:
+                    streak += 1
+                    current_expected -= datetime.timedelta(days=1)
+                elif d > current_expected:
+                    continue
+                else:
+                    break
+
     completion_rate = min(100, int((monthly_workouts / (profile.workout_days * 4)) * 100)) if monthly_workouts > 0 else 0
-    completion_rate = max(10, completion_rate)  # keep a minimum value for visuals
 
     # Today's day name to fetch plan
     today_name = datetime.date.today().strftime("%A")
     todays_workout = workout_regime["schedule"].get(today_name, {"name": "Rest Day", "exercises": []})
 
+    today_workouts = db.query(models.WorkoutHistory).filter(
+        models.WorkoutHistory.user_id == user_id,
+        func.date(models.WorkoutHistory.date) == today
+    ).all()
+
+    completed_today = [
+        {
+            "exercise": w.exercise,
+            "reps": w.reps,
+            "sets": w.sets,
+            "accuracy": w.accuracy,
+            "duration": w.duration
+        }
+        for w in today_workouts
+    ]
+
     return {
         "user_name": user.name,
+        "completed_today": completed_today,
         "metrics": {
             "bmi": profile.bmi,
             "body_fat_est": profile.body_fat_est,
@@ -206,19 +279,25 @@ def update_daily_intake(user_id: int, update: schemas.DailyIntakeUpdate, db: Ses
     today = datetime.date.today()
     intake = db.query(models.DailyIntake).filter(
         models.DailyIntake.user_id == user_id,
-        models.DailyIntake.date == today
+        func.date(models.DailyIntake.date) == today
     ).first()
 
     if not intake:
-        intake = models.DailyIntake(user_id=user_id, date=today)
+        intake = models.DailyIntake(
+            user_id=user_id,
+            date=today,
+            water_liters=0.0,
+            protein_grams=0,
+            calories_kcal=0
+        )
         db.add(intake)
 
     if update.water_liters is not None:
-        intake.water_liters = round(intake.water_liters + update.water_liters, 1)
+        intake.water_liters = round((intake.water_liters or 0.0) + update.water_liters, 1)
     if update.protein_grams is not None:
-        intake.protein_grams = max(0, intake.protein_grams + update.protein_grams)
+        intake.protein_grams = max(0, (intake.protein_grams or 0) + update.protein_grams)
     if update.calories_kcal is not None:
-        intake.calories_kcal = max(0, intake.calories_kcal + update.calories_kcal)
+        intake.calories_kcal = max(0, (intake.calories_kcal or 0) + update.calories_kcal)
 
     db.commit()
     db.refresh(intake)
@@ -282,10 +361,10 @@ def finish_workout(user_id: int, history_in: schemas.WorkoutHistoryCreate, db: S
         today = datetime.date.today()
         intake = db.query(models.DailyIntake).filter(
             models.DailyIntake.user_id == user_id,
-            models.DailyIntake.date == today
+            func.date(models.DailyIntake.date) == today
         ).first()
         if intake:
-            intake.calories_kcal = max(0, intake.calories_kcal + int(history_in.calories_burned))
+            intake.calories_kcal = max(0, (intake.calories_kcal or 0) + int(history_in.calories_burned))
 
     db.commit()
     db.refresh(db_history)

@@ -16,6 +16,18 @@ WORKOUT_PLAN = {
         "cable_fly_pec_deck": {
             "joint": "shoulder", "posture": "standing", 
             "up": 90, "down": 20, "ideal": 90  # Tracking arm angle relative to torso
+        },
+        "pushups": {
+            "joint": "elbow", "posture": "floor",
+            "up": 160, "down": 90, "ideal": 90
+        },
+        "dumbbell_fly": {
+            "joint": "shoulder", "posture": "floor",
+            "up": 90, "down": 20, "ideal": 90
+        },
+        "dumbbell_bench_press": {
+            "joint": "elbow", "posture": "floor",
+            "up": 160, "down": 90, "ideal": 90
         }
     },
 
@@ -42,6 +54,10 @@ WORKOUT_PLAN = {
         "straight_arm_pulldown": {
             "joint": "shoulder", "posture": "standing",
             "up": 150, "down": 20, "ideal": 20
+        },
+        "deadlift": {
+            "joint": "hip", "posture": "standing",
+            "up": 170, "down": 100, "ideal": 100
         }
     },
 
@@ -74,7 +90,7 @@ WORKOUT_PLAN = {
     # -------------------------------------
     # 4. ARMS
     # -------------------------------------
-    "Arms": {
+    "Arms_Forearms": {
         "bicep_curl": {
             "joint": "elbow", "posture": "standing",
             "up": 140, "down": 50, "ideal": 50
@@ -90,6 +106,14 @@ WORKOUT_PLAN = {
         "dips": {
             "joint": "elbow", "posture": "hanging",
             "up": 160, "down": 90, "ideal": 90
+        },
+        "shrugs": {
+            "joint": "shoulder", "posture": "standing",
+            "up": 100, "down": 70, "ideal": 70 # Shrug angle relative to neck
+        },
+        "wrist_curl": {
+            "joint": "wrist", "posture": "seated",
+            "up": 170, "down": 120, "ideal": 120
         }
     },
 
@@ -145,19 +169,7 @@ WORKOUT_PLAN = {
         }
     },
 
-    # -------------------------------------
-    # 7. TRAPS & 8. FOREARMS
-    # -------------------------------------
-    "Traps_Forearms": {
-        "shrugs": {
-            "joint": "shoulder", "posture": "standing",
-            "up": 100, "down": 70, "ideal": 70 # Shrug angle relative to neck
-        },
-        "wrist_curl": {
-            "joint": "wrist", "posture": "seated",
-            "up": 170, "down": 120, "ideal": 120
-        }
-    }
+
 }
 
 # Helper list to flatten the dictionary for easy searching in the main loop

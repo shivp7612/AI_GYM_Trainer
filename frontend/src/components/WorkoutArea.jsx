@@ -242,6 +242,31 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
     speakText("Rest skipped. Let's begin.");
   };
 
+  const handleTreadmillComplete = () => {
+    let cals = 120;
+    let dur = 20;
+    if (currentCleanName.includes("30 mins")) { cals = 220; dur = 30; }
+    else if (currentCleanName.includes("25 mins")) { cals = 180; dur = 25; }
+    else if (currentCleanName.includes("12 mins")) { cals = 90; dur = 12; }
+    else if (currentCleanName.includes("15 mins")) { cals = 110; dur = 15; }
+    
+    const finalSummary = {
+      exercise: 'treadmill',
+      reps: 0,
+      sets: 1,
+      duration: dur,
+      accuracy: 100,
+      calories_burned: cals,
+      avg_fatigue: 15,
+      risk_score: 'Low',
+      wrong_reps: 0,
+      correct_reps: 0
+    };
+
+    setSummaryData(finalSummary);
+    setShowSummary(true);
+  };
+
   const handleFinishSession = async () => {
     stopCamera();
     disconnectWebSocket();
@@ -444,20 +469,44 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
         <div className="lg:col-span-2 space-y-6">
           <div className="relative aspect-video rounded-3xl bg-dark-card border border-white/5 overflow-hidden shadow-2xl flex items-center justify-center">
             
-            {/* Realtime Video Stream */}
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              muted 
-              className="w-full h-full object-cover scale-x-[-1] z-10" // Mirror camera
-            />
+            {currentEx === 'treadmill' ? (
+              <div className="absolute inset-0 bg-dark-card z-40 flex flex-col justify-center items-center text-center p-8">
+                <div className="w-20 h-20 bg-brand-purple/10 border border-brand-purple/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                  <Flame className="w-10 h-10 text-brand-purple" />
+                </div>
+                <h3 className="text-2xl font-black text-white mb-2">TREADMILL SESSION</h3>
+                <p className="text-sm font-semibold text-brand-mint mb-4">{currentCleanName}</p>
+                <div className="bg-dark/50 border border-white/5 rounded-2xl p-4 max-w-md mb-6 space-y-2">
+                  <span className="text-xs text-brand-purple block font-semibold uppercase tracking-wider">Instructions</span>
+                  <p className="text-xs text-dark-muted leading-relaxed">
+                    Set up your physical treadmill according to the target speed and incline settings. Focus on completing your steps and recovery.
+                  </p>
+                </div>
+                <button
+                  onClick={handleTreadmillComplete}
+                  className="px-6 py-3 bg-brand-purple hover:bg-brand-purple/90 active:scale-95 text-white font-bold rounded-xl text-xs transition-all shadow-lg shadow-brand-purple/20 uppercase tracking-wider"
+                >
+                  Complete Treadmill Session
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Realtime Video Stream */}
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted 
+                  className="w-full h-full object-cover scale-x-[-1] z-10" // Mirror camera
+                />
 
-            {/* Hidden Frame Grab Canvas */}
-            <canvas ref={canvasRef} width="640" height="480" className="hidden" />
+                {/* Hidden Frame Grab Canvas */}
+                <canvas ref={canvasRef} width="640" height="480" className="hidden" />
 
-            {/* Neon Landmark SVG overlay */}
-            {renderSkeleton()}
+                {/* Neon Landmark SVG overlay */}
+                {renderSkeleton()}
+              </>
+            )}
 
             {/* Camera off/standby overlay */}
             {!isRunning && (

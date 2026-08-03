@@ -4,7 +4,7 @@ import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import WorkoutArea from './components/WorkoutArea';
 import Analytics from './components/Analytics';
-import ChatAssistant from './components/ChatAssistant';
+
 import ProgressPhotos from './components/ProgressPhotos';
 import WorkoutSelection from './components/WorkoutSelection';
 import { Dumbbell } from 'lucide-react';
@@ -202,9 +202,7 @@ export default function App() {
         <Analytics userId={userId} setView={setView} />
       )}
 
-      {view === 'chat' && (
-        <ChatAssistant setView={setView} />
-      )}
+
 
       {view === 'photos' && (
         <ProgressPhotos userId={userId} setView={setView} />

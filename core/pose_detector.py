@@ -26,7 +26,7 @@ class PoseDetector:
         if self.results.pose_landmarks:
             for id, lm in enumerate(self.results.pose_landmarks.landmark):
                 h, w, c = img.shape
-                # Store the X, Y, and Z (depth) coordinates
+                # Store the X, Y, Z, and visibility coordinates
                 cx, cy, cz = int(lm.x * w), int(lm.y * h), lm.z
-                lmList.append([id, cx, cy, cz])
+                lmList.append([id, cx, cy, cz, lm.visibility])
         return lmList

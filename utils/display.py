@@ -1,36 +1,38 @@
 # utils/display.py
 import cv2
 
-def draw_dashboard(frame, exercise, reps, stage, score, tip, progress, warning="", verify_msg=""):
+def draw_dashboard(frame, exercise, reps, stage, score, tip, progress, warning="", verify_msg="", target_reps=12, target_sets=4, current_set=1):
     """Draws the UI elements on the video frame."""
     
     h, w, _ = frame.shape
 
     # ── LEFT PANEL (stats) ────────────────────────────────────────
     panel_w = 290
-    cv2.rectangle(frame, (0, 0), (panel_w, 300), (0, 0, 0), cv2.FILLED)
+    cv2.rectangle(frame, (0, 0), (panel_w, 330), (0, 0, 0), cv2.FILLED)
 
     cv2.putText(frame, f"Exercise:", (10, 35),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.65, (150, 150, 150), 1)
     cv2.putText(frame, exercise.upper(), (10, 65),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 255), 2)
 
-    cv2.putText(frame, f"Reps:  {reps}", (10, 105),
+    cv2.putText(frame, f"Reps:  {reps} / {target_reps}", (10, 105),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-    cv2.putText(frame, f"Stage: {stage}", (10, 140),
+    cv2.putText(frame, f"Sets:  {current_set} / {target_sets}", (10, 140),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 150, 0), 2)
+    cv2.putText(frame, f"Stage: {stage}", (10, 175),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 80, 80), 2)
-    cv2.putText(frame, f"Score: {score}", (10, 175),
+    cv2.putText(frame, f"Score: {score}", (10, 210),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 200, 255), 2)
-    cv2.putText(frame, f"Tip:   {tip}", (10, 210),
+    cv2.putText(frame, f"Tip:   {tip}", (10, 240),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 255), 2)
 
     # Progress bar
-    cv2.putText(frame, "Motion:", (10, 250),
+    cv2.putText(frame, "Motion:", (10, 270),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 1)
-    cv2.rectangle(frame, (10, 265), (270, 290), (255, 255, 255), 2)
-    cv2.rectangle(frame, (10, 265), (10 + int(2.6 * progress), 290),
+    cv2.rectangle(frame, (10, 285), (270, 310), (255, 255, 255), 2)
+    cv2.rectangle(frame, (10, 285), (10 + int(2.6 * progress), 310),
                   (255, 0, 255), cv2.FILLED)
-    cv2.putText(frame, f"{int(progress)}%", (120, 285),
+    cv2.putText(frame, f"{int(progress)}%", (120, 305),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
     # ── BOTTOM BANNERS & "PRESS M" HINT ──────────────────────────────

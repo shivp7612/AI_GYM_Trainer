@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Flame, Calendar, Trophy, ChevronRight, Droplet, Dumbbell, 
-  Apple, History, MessageSquare, Image, Star, Plus, 
+  Apple, History, Image, Star, Plus, 
   BedDouble, UserCheck, ShieldCheck, HeartPulse 
 } from 'lucide-react';
 
@@ -23,6 +23,12 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
   const [addingWater, setAddingWater] = useState(false);
   const [addingProtein, setAddingProtein] = useState(false);
   const [addingCal, setAddingCal] = useState(false);
+  const [showWorkoutsModal, setShowWorkoutsModal] = useState(false);
+  
+  // Weekly Diet State
+  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const currentDayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const [activeDietDay, setActiveDietDay] = useState(daysOfWeek.includes(currentDayName) ? currentDayName : "Monday");
 
   const fetchDashboardData = async () => {
     try {
@@ -138,8 +144,11 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
   const {
     metrics, goals, intake_today, workout_streak,
     workout_completion, today_workout_name, today_exercises,
-    workout_details, diet_meals, diet_macros_target
+    workout_details, diet_meals, diet_macros_target,
+    completed_today
   } = data;
+
+  const currentDayMeals = diet_meals && diet_meals[activeDietDay] ? diet_meals[activeDietDay] : (diet_meals || {});
 
   const waterPercent = Math.min(100, (intake_today.water / goals.water_target) * 100);
   const proteinPercent = Math.min(100, (intake_today.protein / goals.protein_target) * 100);
@@ -184,13 +193,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
               <Image className="w-4 h-4 text-dark-muted" />
               Progress Photos
             </button>
-            <button 
-              onClick={() => setView('chat')}
-              className="px-4 py-2.5 bg-dark-border/40 hover:bg-dark-border/60 transition-all font-semibold rounded-xl text-xs flex items-center gap-1.5 text-slate-300"
-            >
-              <MessageSquare className="w-4 h-4 text-dark-muted" />
-              AI Coach Chat
-            </button>
+
           </div>
         </div>
 
@@ -204,7 +207,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
                 <Droplet className="w-5 h-5 text-brand-purple" />
               </div>
               <button 
-                onClick={() => handleQuickLog('water', 0.25)}
+                onClick={() => handleQuickLog('water', 0.1)}
                 disabled={addingWater}
                 className="w-8 h-8 rounded-xl bg-brand-purple hover:bg-brand-purple/90 active:scale-95 transition-all flex items-center justify-center font-bold text-white shadow-md shadow-brand-purple/20"
               >
@@ -230,7 +233,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
                 <Dumbbell className="w-5 h-5 text-brand-mint" />
               </div>
               <button 
-                onClick={() => handleQuickLog('protein', 20)}
+                onClick={() => handleQuickLog('protein', 10)}
                 disabled={addingProtein}
                 className="w-8 h-8 rounded-xl bg-brand-mint hover:bg-brand-mint/90 active:scale-95 transition-all flex items-center justify-center font-bold text-white shadow-md shadow-brand-mint/20"
               >
@@ -256,7 +259,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
                 <Flame className="w-5 h-5 text-brand-coral" />
               </div>
               <button 
-                onClick={() => handleQuickLog('calories', 300)}
+                onClick={() => handleQuickLog('calories', 200)}
                 disabled={addingCal}
                 className="w-8 h-8 rounded-xl bg-brand-coral hover:bg-brand-coral/90 active:scale-95 transition-all flex items-center justify-center font-bold text-white shadow-md shadow-brand-coral/20"
               >
@@ -281,8 +284,18 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
               <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 border border-brand-gold/20 flex items-center justify-center">
                 <Trophy className="w-5 h-5 text-brand-gold" />
               </div>
-              <div className="px-2 py-1 rounded-lg bg-white/5 border border-white/5 text-[9px] font-bold tracking-widest text-brand-gold uppercase">
-                ACTIVE
+              <div className="flex items-center gap-2">
+                {completed_today && completed_today.length > 0 && (
+                  <button 
+                    onClick={() => setShowWorkoutsModal(true)}
+                    className="px-2.5 py-1 bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/30 hover:scale-105 active:scale-95 transition-all text-brand-gold text-[9px] font-extrabold tracking-widest uppercase rounded-lg"
+                  >
+                    View
+                  </button>
+                )}
+                <div className="px-2 py-1 rounded-lg bg-white/5 border border-white/5 text-[9px] font-bold tracking-widest text-brand-gold uppercase">
+                  ACTIVE
+                </div>
               </div>
             </div>
             <div>
@@ -314,10 +327,9 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
                 </div>
                 <button
                   onClick={() => onStartWorkout(today_exercises)}
-                  disabled={today_exercises.length === 0}
                   className="px-6 py-3.5 bg-brand-purple hover:bg-brand-purple/90 active:scale-95 transition-all text-white text-sm font-bold rounded-2xl flex items-center gap-1.5 shadow-lg shadow-brand-purple/20"
                 >
-                  Start Workout <ChevronRight className="w-4 h-4" />
+                  {today_exercises.length > 0 ? "Start Workout" : "Start Custom Workout"} <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
 
@@ -343,8 +355,12 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
                         {idx + 1}
                       </div>
                       <div className="flex-1">
-                        <span className="font-semibold block capitalize text-sm">{ex[1] || ex[0].replace(/_/g, ' ')}</span>
-                        <span className="text-xs text-dark-muted block mt-0.5">{workout_details.sets} Sets × {workout_details.reps} Reps | {workout_details.description}</span>
+                        <span className="font-semibold block capitalize text-sm">
+                          {ex[0] === 'treadmill' ? 'Treadmill Recovery & Step Session' : (ex[1] || ex[0].replace(/_/g, ' '))}
+                        </span>
+                        <span className="text-xs text-dark-muted block mt-0.5">
+                          {ex[0] === 'treadmill' ? ex[1] : `${workout_details.sets} Sets × ${workout_details.reps} Reps | ${workout_details.description}`}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -405,13 +421,43 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
               <span className="text-xs text-dark-muted mt-0.5 block">Macro Split: {diet_macros_target.carbs}g Carbs | {diet_macros_target.fat}g Fat</span>
             </div>
 
+            {/* Weekly Days Navigation Tabs */}
+            <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none border-b border-white/5">
+              {daysOfWeek.map(day => {
+                const isSelected = activeDietDay === day;
+                const isSunday = day === "Sunday";
+                return (
+                  <button
+                    key={day}
+                    onClick={() => setActiveDietDay(day)}
+                    className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg transition-all border whitespace-nowrap flex-shrink-0 relative ${
+                      isSelected 
+                        ? 'bg-brand-mint text-dark border-brand-mint shadow-md shadow-brand-mint/10' 
+                        : 'bg-dark-border/20 text-dark-muted border-white/5 hover:border-brand-mint/30'
+                    }`}
+                  >
+                    {day.substring(0, 3)}
+                    {isSunday && (
+                      <span className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${isSelected ? 'bg-brand-coral' : 'bg-brand-gold'} animate-pulse`}></span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="space-y-4 divide-y divide-white/5">
+              {activeDietDay === "Sunday" && (
+                <div className="bg-brand-gold/10 border border-brand-gold/20 rounded-xl p-3 text-[10px] text-brand-gold font-medium leading-relaxed">
+                  <span className="font-extrabold uppercase block mb-0.5">⚠️ Controlled Cheat Day</span>
+                  Sundays are set up as low-stress, controlled recovery days. Enjoy localized favorite meals in portion-controlled sizes.
+                </div>
+              )}
               
-              {Object.keys(diet_meals).map((mealKey) => (
+              {Object.keys(currentDayMeals).map((mealKey) => (
                 <div key={mealKey} className="pt-4 first:pt-0">
                   <h4 className="font-bold text-sm text-brand-mint capitalize mb-2">{mealKey}</h4>
                   <ul className="space-y-1.5 text-xs text-slate-300">
-                    {diet_meals[mealKey].map((food, idx) => (
+                    {currentDayMeals[mealKey].map((food, idx) => (
                       <li key={idx} className="flex items-start gap-2 leading-relaxed">
                         <span className="text-brand-mint font-bold mt-0.5">•</span>
                         <span>{food}</span>
@@ -527,6 +573,54 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
               </div>
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- WORKOUT LOGS MODAL --- */}
+      {showWorkoutsModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md glass-bright p-8 rounded-3xl border border-white/10 animate-fade-in-up relative">
+            
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-extrabold tracking-tight">Today's Completed Workouts</h3>
+                <p className="text-xs text-dark-muted mt-1">
+                  A track of all posture-analyzed sessions logged today
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 border border-brand-gold/20 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-brand-gold" />
+              </div>
+            </div>
+
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              {completed_today.map((w, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-white/5 px-4 py-3.5 rounded-2xl border border-white/5 hover:border-white/10 transition-all animate-fade-in-up">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-slate-200 capitalize">
+                      {w.exercise.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-xs text-dark-muted font-medium mt-1">
+                      {w.sets} sets × {w.reps} reps • {w.duration ? Number(w.duration).toFixed(1) : '0.0'} min
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-brand-mint bg-brand-mint/10 px-2 py-1 rounded-lg border border-brand-mint/15">
+                    {Math.round(w.accuracy)}% Acc
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-6 flex justify-end">
+              <button 
+                onClick={() => setShowWorkoutsModal(false)}
+                className="w-full py-3.5 bg-dark-border/40 hover:bg-dark-border/60 transition-colors font-semibold rounded-xl text-xs text-white"
+              >
+                Close
+              </button>
+            </div>
+
           </div>
         </div>
       )}

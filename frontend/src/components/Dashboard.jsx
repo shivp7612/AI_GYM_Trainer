@@ -170,12 +170,6 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
           <div className="absolute top-[-30px] left-[-30px] w-64 h-64 rounded-full bg-brand-purple/10 blur-3xl pointer-events-none"></div>
 
           <div>
-            {/* AI Status Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-purple/10 border border-brand-purple/20 text-[10px] font-black text-brand-purple uppercase tracking-widest mb-3 select-none">
-              <span className="w-1.5 h-1.5 bg-brand-purple rounded-full animate-ping"></span>
-              AI ATHLETIC ENGINE LIVE
-            </div>
-
             <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white select-none">
               Heyy <span className="bg-gradient-to-r from-[#818CF8] via-[#A5B4FC] to-[#34D399] bg-clip-text text-transparent">{userName}</span> 👋
             </h1>
@@ -186,22 +180,6 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
           
           {/* Centered/Right Motivational Thought with high-tech badge design */}
           <div className="flex items-center gap-3 w-full lg:w-auto mt-2 lg:mt-0">
-            {/* High-Tech Telemetry Stats Grid */}
-            <div className="hidden md:grid grid-cols-2 gap-3 mr-4">
-              <div className="bg-[#121829]/60 border border-white/5 px-4 py-2 rounded-xl text-left">
-                <span className="text-[9px] font-bold text-dark-muted block uppercase tracking-wider">Engine Status</span>
-                <span className="text-xs font-black text-brand-mint flex items-center gap-1 mt-0.5">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Optimal
-                </span>
-              </div>
-              <div className="bg-[#121829]/60 border border-white/5 px-4 py-2 rounded-xl text-left">
-                <span className="text-[9px] font-bold text-dark-muted block uppercase tracking-wider">Sync State</span>
-                <span className="text-xs font-black text-brand-purple flex items-center gap-1 mt-0.5">
-                  <HeartPulse className="w-3.5 h-3.5 animate-pulse" /> Live
-                </span>
-              </div>
-            </div>
-
             {/* Glowing Motivational Quote Box */}
             <div className="glass px-6 py-4 rounded-2xl border border-brand-mint/30 hover:border-brand-mint/60 transition-all duration-500 flex items-center gap-3 shadow-lg relative overflow-hidden group w-full lg:w-auto futuristic-glow-mint">
               <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(16,185,129,0.1),transparent)] opacity-100 pointer-events-none"></div>

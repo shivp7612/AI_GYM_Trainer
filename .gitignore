@@ -6,6 +6,7 @@ __pycache__/
 
 # Database files
 *.db
+*.env
 
 # Local uploads
 /uploads/

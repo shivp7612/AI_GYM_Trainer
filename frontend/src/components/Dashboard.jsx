@@ -6,9 +6,8 @@ import {
   BedDouble, UserCheck, ShieldCheck, HeartPulse 
 } from 'lucide-react';
 
-export default function Dashboard({ userId, userName, setView, onStartWorkout }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function Dashboard({ userId, userName, setView, onStartWorkout, data, setData, fetchDashboardData }) {
+  const [loading, setLoading] = useState(!data);
   const [error, setError] = useState('');
   
   // Readiness Checklist Modal State
@@ -30,12 +29,11 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
   const currentDayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const [activeDietDay, setActiveDietDay] = useState(daysOfWeek.includes(currentDayName) ? currentDayName : "Monday");
 
-  const fetchDashboardData = async () => {
+  const loadData = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/dashboard/${userId}`);
-      if (!res.ok) throw new Error('Failed to load dashboard metrics');
-      const json = await res.json();
-      setData(json);
+      if (fetchDashboardData) {
+        await fetchDashboardData();
+      }
     } catch (err) {
       setError(err.message || 'Connection to API failed.');
     } finally {
@@ -44,8 +42,12 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
   };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [userId]);
+    if (!data) {
+      loadData();
+    } else {
+      setLoading(false);
+    }
+  }, [userId, data]);
 
   const handleQuickLog = async (type, amount) => {
     try {
@@ -112,7 +114,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
     }
   };
 
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark text-white">
         <div className="text-center space-y-4">
@@ -163,154 +165,25 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout })
       <div className="max-w-6xl mx-auto pt-8 space-y-8 relative z-10 animate-fade-in-up">
         
         {/* HEADER BAR */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Hello {userName} 👋</h1>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-2 relative">
+          <div className="max-w-md">
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Heyy {userName} 👋</h1>
             <p className="text-dark-muted text-xs md:text-sm tracking-wide mt-1">
               Ready for your session? Optimize performance and prevent injuries today.
             </p>
           </div>
           
-          <div className="flex flex-wrap gap-2.5">
-            <button 
-              onClick={() => setShowReadinessModal(true)}
-              className="px-4 py-2.5 bg-brand-purple/10 border border-brand-purple/20 hover:bg-brand-purple/20 transition-all font-semibold rounded-xl text-xs flex items-center gap-1.5 text-brand-purple"
-            >
-              <UserCheck className="w-4 h-4" />
-              Exercise Readiness Score
-            </button>
-            <button 
-              onClick={() => setView('analytics')}
-              className="px-4 py-2.5 bg-dark-border/40 hover:bg-dark-border/60 transition-all font-semibold rounded-xl text-xs flex items-center gap-1.5 text-slate-300"
-            >
-              <History className="w-4 h-4 text-dark-muted" />
-              Analytics
-            </button>
-            <button 
-              onClick={() => setView('photos')}
-              className="px-4 py-2.5 bg-dark-border/40 hover:bg-dark-border/60 transition-all font-semibold rounded-xl text-xs flex items-center gap-1.5 text-slate-300"
-            >
-              <Image className="w-4 h-4 text-dark-muted" />
-              Progress Photos
-            </button>
-
+          {/* Centered Motivational Quote/Thought */}
+          <div className="md:absolute md:left-1/2 md:-translate-x-1/2 md:top-1/2 md:-translate-y-1/2 mt-4 md:mt-0 flex justify-center w-full md:w-auto">
+            <div className="glass px-6 py-3 rounded-2xl border border-brand-purple/10 flex items-center shadow-inner">
+              <span className="text-sm font-semibold italic text-brand-mint tracking-wide text-center">
+                You're built to be epic
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* --- GRID: TRACKERS & STREAKS --- */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          
-          {/* DAILY WATER LOGGER */}
-          <div className="glass p-6 rounded-3xl flex flex-col justify-between h-[180px] border border-white/5 relative overflow-hidden">
-            <div className="flex justify-between items-start">
-              <div className="w-10 h-10 rounded-2xl bg-brand-purple/10 border border-brand-purple/20 flex items-center justify-center">
-                <Droplet className="w-5 h-5 text-brand-purple" />
-              </div>
-              <button 
-                onClick={() => handleQuickLog('water', 0.1)}
-                disabled={addingWater}
-                className="w-8 h-8 rounded-xl bg-brand-purple hover:bg-brand-purple/90 active:scale-95 transition-all flex items-center justify-center font-bold text-white shadow-md shadow-brand-purple/20"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div>
-              <div className="flex justify-between items-baseline mb-1">
-                <span className="text-2xl font-black">{intake_today.water} <span className="text-xs text-dark-muted font-bold">/ {goals.water_target}L</span></span>
-                <span className="text-xs font-bold text-brand-purple">{Math.round(waterPercent)}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-dark-border rounded-full overflow-hidden">
-                <div className="h-full bg-brand-purple rounded-full" style={{ width: `${waterPercent}%` }}></div>
-              </div>
-              <span className="text-[10px] font-bold text-dark-muted tracking-wider block mt-2 uppercase">Water Intake Target</span>
-            </div>
-          </div>
 
-          {/* DAILY PROTEIN LOGGER */}
-          <div className="glass p-6 rounded-3xl flex flex-col justify-between h-[180px] border border-white/5">
-            <div className="flex justify-between items-start">
-              <div className="w-10 h-10 rounded-2xl bg-brand-mint/10 border border-brand-mint/20 flex items-center justify-center">
-                <Dumbbell className="w-5 h-5 text-brand-mint" />
-              </div>
-              <button 
-                onClick={() => handleQuickLog('protein', 10)}
-                disabled={addingProtein}
-                className="w-8 h-8 rounded-xl bg-brand-mint hover:bg-brand-mint/90 active:scale-95 transition-all flex items-center justify-center font-bold text-white shadow-md shadow-brand-mint/20"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div>
-              <div className="flex justify-between items-baseline mb-1">
-                <span className="text-2xl font-black">{intake_today.protein} <span className="text-xs text-dark-muted font-bold">/ {goals.protein_target}g</span></span>
-                <span className="text-xs font-bold text-brand-mint">{Math.round(proteinPercent)}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-dark-border rounded-full overflow-hidden">
-                <div className="h-full bg-brand-mint rounded-full" style={{ width: `${proteinPercent}%` }}></div>
-              </div>
-              <span className="text-[10px] font-bold text-dark-muted tracking-wider block mt-2 uppercase">Protein Consumed</span>
-            </div>
-          </div>
-
-          {/* DAILY CALORIE LOGGER */}
-          <div className="glass p-6 rounded-3xl flex flex-col justify-between h-[180px] border border-white/5">
-            <div className="flex justify-between items-start">
-              <div className="w-10 h-10 rounded-2xl bg-brand-coral/10 border border-brand-coral/20 flex items-center justify-center">
-                <Flame className="w-5 h-5 text-brand-coral" />
-              </div>
-              <button 
-                onClick={() => handleQuickLog('calories', 200)}
-                disabled={addingCal}
-                className="w-8 h-8 rounded-xl bg-brand-coral hover:bg-brand-coral/90 active:scale-95 transition-all flex items-center justify-center font-bold text-white shadow-md shadow-brand-coral/20"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            <div>
-              <div className="flex justify-between items-baseline mb-1">
-                <span className="text-2xl font-black">{intake_today.calories} <span className="text-xs text-dark-muted font-bold">/ {goals.calories_target} kcal</span></span>
-                <span className="text-xs font-bold text-brand-coral">{Math.round(caloriesPercent)}%</span>
-              </div>
-              <div className="w-full h-1.5 bg-dark-border rounded-full overflow-hidden">
-                <div className="h-full bg-brand-coral rounded-full" style={{ width: `${caloriesPercent}%` }}></div>
-              </div>
-              <span className="text-[10px] font-bold text-dark-muted tracking-wider block mt-2 uppercase">Daily Calories Intake</span>
-            </div>
-          </div>
-
-          {/* WORKOUT STREAK / PROGRESS */}
-          <div className="glass p-6 rounded-3xl flex flex-col justify-between h-[180px] border border-white/5">
-            <div className="flex justify-between items-start">
-              <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 border border-brand-gold/20 flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-brand-gold" />
-              </div>
-              <div className="flex items-center gap-2">
-                {completed_today && completed_today.length > 0 && (
-                  <button 
-                    onClick={() => setShowWorkoutsModal(true)}
-                    className="px-2.5 py-1 bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/30 hover:scale-105 active:scale-95 transition-all text-brand-gold text-[9px] font-extrabold tracking-widest uppercase rounded-lg"
-                  >
-                    View
-                  </button>
-                )}
-                <div className="px-2 py-1 rounded-lg bg-white/5 border border-white/5 text-[9px] font-bold tracking-widest text-brand-gold uppercase">
-                  ACTIVE
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between items-baseline mb-1">
-                <span className="text-2xl font-black">{workout_streak} <span className="text-xs text-dark-muted font-bold">Days</span></span>
-                <span className="text-xs font-bold text-brand-gold">{workout_completion}% Completion</span>
-              </div>
-              <div className="w-full h-1.5 bg-dark-border rounded-full overflow-hidden">
-                <div className="h-full bg-brand-gold rounded-full" style={{ width: `${workout_completion}%` }}></div>
-              </div>
-              <span className="text-[10px] font-bold text-dark-muted tracking-wider block mt-2 uppercase">Workout Consistency</span>
-            </div>
-          </div>
-
-        </div>
 
         {/* --- MAIN SPLIT CONTAINER --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

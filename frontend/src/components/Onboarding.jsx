@@ -5,6 +5,14 @@ import { ChevronRight, Award, User, Target, Calendar, Heart } from 'lucide-react
 export default function Onboarding({ onFinish }) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('Male');
   const [height, setHeight] = useState('');
@@ -35,8 +43,48 @@ export default function Onboarding({ onFinish }) {
     setSelectedInjuries(updated);
   };
 
+  const handleLogin = async (e) => {
+    if (e) e.preventDefault();
+    if (!loginUsername.trim()) return setError('Please enter Email or Phone number');
+    if (!loginPassword) return setError('Please enter your password');
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('http://localhost:8000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: loginUsername.trim(),
+          password: loginPassword
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || 'Login failed. Please check credentials.');
+      }
+
+      const user = await res.json();
+      
+      localStorage.setItem('gym_user_id', user.id);
+      localStorage.setItem('gym_user_name', user.name);
+      localStorage.setItem('gym_user_goal', user.goal || 'Muscle Gain');
+
+      onFinish(user.id, user.name);
+    } catch (e) {
+      setError(e.message || 'Login connection failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFinish = async () => {
     if (!name.trim()) return setError('Please enter your name');
+    if (!email.trim() || !email.includes('@')) return setError('Please enter a valid email');
+    if (!phone.trim()) return setError('Please enter your phone number');
+    if (!password) return setError('Please enter a password');
     if (!age || isNaN(age)) return setError('Please enter a valid age');
     if (!height || isNaN(height)) return setError('Please enter a valid height');
     if (!weight || isNaN(weight)) return setError('Please enter a valid weight');
@@ -49,11 +97,19 @@ export default function Onboarding({ onFinish }) {
       const regRes = await fetch('http://localhost:8000/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim() })
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          password: password
+        })
       });
 
-      if (!regRes.ok) throw new Error('Registration failed');
-      const user = await regRes.parse ? await regRes.parse() : await regRes.json();
+      if (!regRes.ok) {
+        const errData = await regRes.json();
+        throw new Error(errData.detail || 'Registration failed');
+      }
+      const user = await regRes.json();
 
       // 2. Submit Profile Setup
       const profilePayload = {
@@ -81,6 +137,7 @@ export default function Onboarding({ onFinish }) {
       // Save to localStorage
       localStorage.setItem('gym_user_id', user.id);
       localStorage.setItem('gym_user_name', user.name);
+      localStorage.setItem('gym_user_goal', goal);
 
       onFinish(user.id, user.name);
     } catch (e) {
@@ -93,6 +150,9 @@ export default function Onboarding({ onFinish }) {
   const nextStep = () => {
     if (step === 2) {
       if (!name.trim()) return setError('Name is required');
+      if (!email.trim() || !email.includes('@')) return setError('Please enter a valid email');
+      if (!phone.trim() || phone.length < 8) return setError('Please enter a valid phone number (at least 8 digits)');
+      if (!password || password.length < 4) return setError('Password must be at least 4 characters');
       if (!age || age < 10 || age > 100) return setError('Please enter a valid age (10-100)');
       if (!height || height < 100 || height > 250) return setError('Please enter a valid height (100-250 cm)');
       if (!weight || weight < 30 || weight > 250) return setError('Please enter a valid weight (30-250 kg)');
@@ -124,7 +184,7 @@ export default function Onboarding({ onFinish }) {
         )}
 
         {/* --- SCREEN 1: WELCOME --- */}
-        {step === 1 && (
+        {step === 1 && !isLoggingIn && (
           <div className="text-center flex flex-col items-center py-6">
             <div className="w-20 h-20 bg-brand-purple/10 rounded-2xl flex items-center justify-center border border-brand-purple/20 mb-6 animate-bounce">
               <Award className="w-10 h-10 text-brand-purple" />
@@ -135,13 +195,91 @@ export default function Onboarding({ onFinish }) {
             <p className="text-dark-muted font-medium text-sm tracking-wide max-w-[280px] mb-8">
               Transform Your Fitness with Precision Real-Time AI Posture Analytics
             </p>
-            <button
-              onClick={() => setStep(2)}
-              className="w-full py-4 bg-brand-purple hover:bg-brand-purple/90 active:scale-95 transition-all text-white font-semibold rounded-2xl flex items-center justify-center gap-2 group shadow-lg shadow-brand-purple/30"
-            >
-              Get Started
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+            {error && <p className="w-full mb-4 text-brand-coral text-xs font-semibold bg-brand-coral/10 p-3 rounded-lg border border-brand-coral/20">{error}</p>}
+            <div className="w-full space-y-3.5">
+              <button
+                onClick={() => {
+                  setIsLoggingIn(true);
+                  setError('');
+                }}
+                className="w-full py-4 bg-brand-purple hover:bg-brand-purple/90 active:scale-95 transition-all text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-purple/30"
+              >
+                Log In
+              </button>
+              <button
+                onClick={() => {
+                  setStep(2);
+                  setError('');
+                }}
+                className="w-full py-4 bg-dark-border/40 hover:bg-dark-border/60 active:scale-95 transition-all text-slate-200 border border-white/5 font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg"
+              >
+                Sign Up
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* --- LOGIN FORM --- */}
+        {isLoggingIn && (
+          <div className="space-y-5">
+            <div className="flex items-center gap-2 mb-2">
+              <User className="w-5 h-5 text-brand-purple" />
+              <h2 className="text-xl font-bold">Log In to Coach</h2>
+            </div>
+            {error && <p className="text-brand-coral text-xs font-semibold bg-brand-coral/10 p-3 rounded-lg border border-brand-coral/20">{error}</p>}
+            
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-dark-muted block mb-1">Email or Phone Number</label>
+                <input
+                  type="text"
+                  placeholder="Enter email or phone number"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-dark-muted block mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showLoginPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    className="w-full pl-4 pr-12 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPassword(!showLoginPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-dark-muted hover:text-white transition-colors"
+                  >
+                    {showLoginPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLoggingIn(false);
+                    setError('');
+                  }}
+                  className="w-1/3 py-4 bg-dark-border/30 hover:bg-dark-border/40 transition-colors text-white font-semibold rounded-2xl"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-2/3 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center shadow-lg"
+                >
+                  {loading ? 'Logging In...' : 'Log In'}
+                </button>
+              </div>
+            </form>
           </div>
         )}
 
@@ -164,6 +302,49 @@ export default function Onboarding({ onFinish }) {
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-dark-muted block mb-1">Email</label>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-dark-muted block mb-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    placeholder="Phone number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-dark-muted block mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-4 pr-12 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-dark-muted hover:text-white transition-colors"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -232,7 +413,7 @@ export default function Onboarding({ onFinish }) {
             </div>
             
             <div className="space-y-3">
-              {['Weight Loss', 'Muscle Gain', 'Strength', 'Rehabilitation'].map((g) => (
+              {['Weight Loss', 'Muscle Gain', 'Strength'].map((g) => (
                 <div
                   key={g}
                   onClick={() => setGoal(g)}
@@ -270,12 +451,23 @@ export default function Onboarding({ onFinish }) {
               </div>
             </div>
 
-            <button
-              onClick={nextStep}
-              className="w-full mt-6 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
-            >
-              Next <ChevronRight className="w-4 h-4" />
-            </button>
+            <div className="pt-4 flex gap-3">
+              <button
+                onClick={() => {
+                  setError('');
+                  setStep(2);
+                }}
+                className="w-1/3 py-4 bg-dark-border/30 hover:bg-dark-border/40 transition-colors text-white font-semibold rounded-2xl"
+              >
+                Back
+              </button>
+              <button
+                onClick={nextStep}
+                className="w-2/3 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -307,12 +499,23 @@ export default function Onboarding({ onFinish }) {
               </div>
             </div>
 
-            <button
-              onClick={nextStep}
-              className="w-full mt-6 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
-            >
-              Next <ChevronRight className="w-4 h-4" />
-            </button>
+            <div className="pt-4 flex gap-3">
+              <button
+                onClick={() => {
+                  setError('');
+                  setStep(3);
+                }}
+                className="w-1/3 py-4 bg-dark-border/30 hover:bg-dark-border/40 transition-colors text-white font-semibold rounded-2xl"
+              >
+                Back
+              </button>
+              <button
+                onClick={nextStep}
+                className="w-2/3 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 

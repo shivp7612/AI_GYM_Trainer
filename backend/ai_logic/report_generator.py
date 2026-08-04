@@ -31,6 +31,7 @@ def generate_pdf_report(user_name: str, profile_goal: str, session: Dict[str, An
         fontName='Helvetica-Bold',
         fontSize=24,
         textColor=primary_color,
+        leading=28,
         spaceAfter=6
     )
     
@@ -40,6 +41,7 @@ def generate_pdf_report(user_name: str, profile_goal: str, session: Dict[str, An
         fontName='Helvetica',
         fontSize=12,
         textColor=grey_color,
+        leading=15,
         spaceAfter=15
     )
     
@@ -96,7 +98,7 @@ def generate_pdf_report(user_name: str, profile_goal: str, session: Dict[str, An
     # Profile Info Block
     profile_data = [
         [Paragraph(f"<b>Athlete:</b> {user_name}", body_style), Paragraph(f"<b>Primary Goal:</b> {profile_goal}", body_style)],
-        [Paragraph(f"<b>Session Duration:</b> {session['duration']} mins", body_style), Paragraph(f"<b>Calories Burned:</b> {int(session['calories_burned'])} kcal", body_style)]
+        [Paragraph(f"<b>Session Duration:</b> {float(session['duration']):.1f} mins", body_style), Paragraph(f"<b>Calories Burned:</b> {int(session['calories_burned'])} kcal", body_style)]
     ]
     
     profile_table = Table(profile_data, colWidths=[260, 260])
@@ -123,7 +125,7 @@ def generate_pdf_report(user_name: str, profile_goal: str, session: Dict[str, An
     )
 
     summary_text = (
-        f"During this {session['duration']}-minute session, your average posture form accuracy was <b>{session['avg_accuracy']}%</b>. "
+        f"During this {float(session['duration']):.1f}-minute session, your average posture form accuracy was <b>{session['avg_accuracy']}%</b>. "
         f"Your peak fatigue index reached <b>{session['avg_fatigue']}%</b>, indicating a {session['risk_level'].lower()} injury risk profile. <br/><br/>"
         f"<b>Coach Feedback:</b> {accuracy_eval}"
     )

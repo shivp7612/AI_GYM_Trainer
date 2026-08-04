@@ -5,14 +5,24 @@ import datetime
 
 class UserCreate(BaseModel):
     name: str
+    email: str
+    phone: str
+    password: str
 
 class UserResponse(BaseModel):
     id: int
     name: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    goal: Optional[str] = None
     created_at: datetime.datetime
 
     class Config:
         orm_mode = True
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
 
 class UserProfileCreate(BaseModel):
     age: int

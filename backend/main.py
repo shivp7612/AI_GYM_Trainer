@@ -21,6 +21,23 @@ from backend.ai_logic.socket_manager import WorkoutSocketSession
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+def run_migrations():
+    from sqlalchemy import inspect, text
+    inspector = inspect(engine)
+    columns = [col['name'] for col in inspector.get_columns('users')]
+    with engine.begin() as conn:
+        if 'email' not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR"))
+        if 'phone' not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR"))
+        if 'password' not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN password VARCHAR"))
+
+try:
+    run_migrations()
+except Exception as e:
+    print(f"Migration error: {e}")
+
 app = FastAPI(title="AI Gym Trainer API")
 
 # Add CORS middleware to allow connection from React
@@ -44,14 +61,56 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 @app.post("/api/register", response_model=schemas.UserResponse)
 def register_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.name == user_in.name).first()
-    if db_user:
-        return db_user
-    new_user = models.User(name=user_in.name)
+    db_user_name = db.query(models.User).filter(models.User.name == user_in.name).first()
+    if db_user_name:
+        raise HTTPException(status_code=400, detail="Name already taken")
+    
+    db_user_email = db.query(models.User).filter(models.User.email == user_in.email).first()
+    if db_user_email:
+        raise HTTPException(status_code=400, detail="Email already registered")
+        
+    db_user_phone = db.query(models.User).filter(models.User.phone == user_in.phone).first()
+    if db_user_phone:
+        raise HTTPException(status_code=400, detail="Phone number already registered")
+
+    new_user = models.User(
+        name=user_in.name,
+        email=user_in.email,
+        phone=user_in.phone,
+        password=user_in.password
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    return schemas.UserResponse(
+        id=new_user.id,
+        name=new_user.name,
+        email=new_user.email,
+        phone=new_user.phone,
+        goal="Muscle Gain",  # Default at registration time
+        created_at=new_user.created_at
+    )
+
+@app.post("/api/login", response_model=schemas.UserResponse)
+def login_user(login_in: schemas.UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(
+        (models.User.email == login_in.username) | (models.User.phone == login_in.username)
+    ).first()
+    
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if db_user.password != login_in.password:
+        raise HTTPException(status_code=400, detail="Incorrect password")
+        
+    return schemas.UserResponse(
+        id=db_user.id,
+        name=db_user.name,
+        email=db_user.email,
+        phone=db_user.phone,
+        goal=db_user.profile.goal if db_user.profile else "Muscle Gain",
+        created_at=db_user.created_at
+    )
 
 
 # --- ONBOARDING & PROFILE ---

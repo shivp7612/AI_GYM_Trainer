@@ -4,10 +4,11 @@ import Onboarding from './components/Onboarding';
 import Dashboard from './components/Dashboard';
 import WorkoutArea from './components/WorkoutArea';
 import Analytics from './components/Analytics';
-
 import ProgressPhotos from './components/ProgressPhotos';
 import WorkoutSelection from './components/WorkoutSelection';
-import { Dumbbell } from 'lucide-react';
+import ProfileView from './components/ProfileView';
+import ChatAssistant from './components/ChatAssistant';
+import { LayoutDashboard, Dumbbell, History, Image, User, MessageSquare, LogOut, Activity, Droplet, Trophy, ChevronLeft, Menu } from 'lucide-react';
 
 function LocalWorkoutView({ userId, selectedExercise, setView }) {
   const [status, setStatus] = useState('launching');
@@ -99,17 +100,78 @@ export default function App() {
   const [view, setView] = useState('loading');
   const [userId, setUserId] = useState(null);
   const [userName, setUserName] = useState('');
+  const [userGoal, setUserGoal] = useState('Muscle Gain');
   const [workoutExercises, setWorkoutExercises] = useState([]);
   const [selectedExercise, setSelectedExercise] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [showWorkoutsModal, setShowWorkoutsModal] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const fetchDashboardData = async (uid) => {
+    const targetUserId = uid || userId;
+    if (!targetUserId) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/dashboard/${targetUserId}`);
+      if (res.ok) {
+        const json = await res.json();
+        setDashboardData(json);
+      }
+    } catch (e) {
+      console.error("Sidebar fetch failed", e);
+    }
+  };
+
+  const handleQuickLogSidebar = async (type, amount) => {
+    if (!userId) return;
+    try {
+      const payload = {};
+      if (type === 'water') {
+        payload.water_liters = amount;
+      }
+      if (type === 'protein') {
+        payload.protein_grams = amount;
+      }
+
+      const res = await fetch(`http://localhost:8000/api/intake/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!res.ok) throw new Error('Quick log failed');
+      const intake = await res.json();
+      
+      setDashboardData(prev => ({
+        ...prev,
+        intake_today: {
+          ...prev.intake_today,
+          protein: intake.protein_grams,
+          water: intake.water_liters
+        }
+      }));
+    } catch (e) {
+      alert(e.message);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      fetchDashboardData(userId);
+    } else {
+      setDashboardData(null);
+    }
+  }, [userId, view]);
 
   useEffect(() => {
     // Check if user has already onboarded
     const storedId = localStorage.getItem('gym_user_id');
     const storedName = localStorage.getItem('gym_user_name');
+    const storedGoal = localStorage.getItem('gym_user_goal');
 
     if (storedId && storedName) {
       setUserId(parseInt(storedId));
       setUserName(storedName);
+      if (storedGoal) setUserGoal(storedGoal);
       setView('dashboard');
     } else {
       setView('onboarding');
@@ -119,15 +181,133 @@ export default function App() {
   const handleFinishOnboarding = (id, name) => {
     setUserId(id);
     setUserName(name);
+    const storedGoal = localStorage.getItem('gym_user_goal') || 'Muscle Gain';
+    setUserGoal(storedGoal);
     setView('dashboard');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('gym_user_id');
     localStorage.removeItem('gym_user_name');
+    localStorage.removeItem('gym_user_goal');
     setUserId(null);
     setUserName('');
+    setUserGoal('Muscle Gain');
     setView('onboarding');
+  };
+
+  const sidebarViews = ['dashboard', 'select-workout', 'analytics', 'photos', 'profile'];
+  const showSidebar = userId && sidebarViews.includes(view);
+
+  const renderSidebar = () => {
+    const navItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'select-workout', label: 'Workout library', icon: Dumbbell },
+      { id: 'analytics', label: 'Performance Analytics', icon: History },
+      { id: 'photos', label: 'Progress', icon: Image },
+      { id: 'profile', label: 'Profile', icon: User },
+    ];
+
+    return (
+      <div className={`w-64 bg-[#080B11] border-r border-white/5 flex flex-col h-screen sticky top-0 flex-shrink-0 select-none z-30 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full absolute md:relative md:w-0 overflow-hidden border-none'}`}>
+        {/* Branding header */}
+        <div className="p-6 border-b border-white/5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand-purple/10 border border-brand-purple/20 flex items-center justify-center text-brand-purple">
+              <Activity className="w-5 h-5 animate-pulse" />
+            </div>
+            <span className="font-extrabold tracking-tight text-white text-lg">AI Gym Trainer</span>
+          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)}
+            className="w-8 h-8 rounded-lg bg-dark-border/40 hover:bg-dark-border/60 flex items-center justify-center text-dark-muted hover:text-white transition-colors"
+            title="Collapse Sidebar"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* User Card */}
+        <div className="p-4 mx-4 my-6 bg-dark-border/20 border border-white/5 rounded-2xl flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-mint flex items-center justify-center font-bold text-sm text-white uppercase flex-shrink-0">
+            {userName ? userName.substring(0, 2) : 'AI'}
+          </div>
+          <div className="min-w-0">
+            <span className="font-extrabold text-white text-sm block truncate">{userName || 'User'}</span>
+            <span className="text-[10px] font-black text-brand-mint tracking-wider block mt-0.5 uppercase truncate">{userGoal}</span>
+          </div>
+        </div>
+
+        {/* Nav list */}
+        <div className="flex-1 px-4 space-y-1.5 overflow-y-auto">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = view === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setView(item.id)}
+                className={`w-full px-4 py-3.5 rounded-xl text-left text-sm font-semibold transition-all flex items-center gap-3 ${
+                  isActive 
+                    ? 'bg-brand-purple/10 text-brand-purple border border-brand-purple/20 shadow-md shadow-brand-purple/5' 
+                    : 'text-dark-muted border border-transparent hover:text-slate-200 hover:bg-dark-border/10'
+                }`}
+              >
+                <Icon className={`w-4 h-4 ${isActive ? 'text-brand-purple' : 'text-dark-muted'}`} />
+                {item.label}
+              </button>
+            );
+          })}
+
+          {/* Activity Trackers inside Sidebar */}
+          {dashboardData && (
+            <div className="mt-6 pt-4 border-t border-white/5 space-y-3 pb-4">
+              <span className="text-[10px] font-bold text-dark-muted tracking-widest uppercase block mb-1">Daily Progress</span>
+              
+
+
+              {/* Consistency Tracker */}
+              <div className="bg-dark-border/15 border border-white/5 rounded-xl p-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-3.5 h-3.5 text-brand-gold" />
+                    <span className="text-xs font-semibold text-slate-300">Streak</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {dashboardData.completed_today && dashboardData.completed_today.length > 0 && (
+                      <button 
+                        onClick={() => setShowWorkoutsModal(true)}
+                        className="px-1.5 py-0.5 bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/30 hover:scale-105 active:scale-95 transition-all text-brand-gold text-[8px] font-bold tracking-widest uppercase rounded-md"
+                      >
+                        View
+                      </button>
+                    )}
+                    <span className="text-[10px] font-bold text-dark-muted">{dashboardData.workout_streak} Days ({dashboardData.workout_completion}%)</span>
+                  </div>
+                </div>
+                <div className="w-full h-1 bg-dark-border rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-brand-gold rounded-full transition-all duration-300" 
+                    style={{ width: `${dashboardData.workout_completion}%` }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Logout at bottom */}
+        <div className="p-4 border-t border-white/5">
+          <button
+            onClick={handleLogout}
+            className="w-full px-4 py-3.5 rounded-xl text-left text-sm font-semibold text-brand-coral hover:bg-brand-coral/5 transition-all flex items-center gap-3"
+          >
+            <LogOut className="w-4 h-4 text-brand-coral" />
+            Logout
+          </button>
+        </div>
+      </div>
+    );
   };
 
   if (view === 'loading') {
@@ -142,70 +322,127 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-dark text-white relative">
-      {/* Floating Logout Button on dashboard view */}
-      {view === 'dashboard' && (
-        <button 
-          onClick={handleLogout}
-          className="absolute top-8 right-4 md:right-8 z-20 px-3 py-1.5 bg-dark-border/20 hover:bg-brand-coral/10 hover:text-brand-coral border border-white/5 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all"
-        >
-          Reset Profile
-        </button>
-      )}
+    <div className="min-h-screen bg-dark text-white flex flex-col md:flex-row relative overflow-x-hidden">
+      {showSidebar && renderSidebar()}
 
-      {view === 'onboarding' && (
-        <Onboarding onFinish={handleFinishOnboarding} />
-      )}
+      <div className={`flex-1 min-w-0 relative ${showSidebar && !isSidebarOpen ? 'pl-20 md:pl-24' : ''} transition-all duration-300`}>
+        {/* Expand button visible only when sidebar is hidden */}
+        {showSidebar && !isSidebarOpen && (
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="absolute top-8 left-8 z-40 w-10 h-10 rounded-xl bg-[#080B11] border border-white/10 flex items-center justify-center text-dark-muted hover:text-white hover:border-brand-purple/40 shadow-lg shadow-black/40 transition-all duration-200 hover:scale-105 active:scale-95 animate-fade-in"
+            title="Expand Sidebar"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        {view === 'onboarding' && (
+          <Onboarding onFinish={handleFinishOnboarding} />
+        )}
 
-      {view === 'dashboard' && (
-        <Dashboard 
-          userId={userId} 
-          userName={userName} 
-          setView={setView} 
-          onStartWorkout={(exercises) => {
-            setWorkoutExercises(exercises);
-            setView('select-workout');
-          }}
-        />
-      )}
+        {view === 'dashboard' && (
+          <Dashboard 
+            userId={userId} 
+            userName={userName} 
+            setView={setView} 
+            data={dashboardData}
+            setData={setDashboardData}
+            fetchDashboardData={() => fetchDashboardData(userId)}
+            onStartWorkout={(exercises) => {
+              setWorkoutExercises(exercises);
+              setView('select-workout');
+            }}
+          />
+        )}
 
-      {view === 'select-workout' && (
-        <WorkoutSelection 
-          userId={userId} 
-          workoutExercises={workoutExercises} 
-          setView={setView} 
-          onSelectExercise={(key, name) => {
-            setSelectedExercise({ key, name });
-            setView('local-workout');
-          }}
-        />
-      )}
+        {view === 'select-workout' && (
+          <WorkoutSelection 
+            userId={userId} 
+            workoutExercises={workoutExercises} 
+            setView={setView} 
+            onSelectExercise={(key, name) => {
+              setSelectedExercise({ key, name });
+              setView('local-workout');
+            }}
+          />
+        )}
 
-      {view === 'local-workout' && (
-        <LocalWorkoutView 
-          userId={userId} 
-          selectedExercise={selectedExercise}
-          setView={setView} 
-        />
-      )}
+        {view === 'local-workout' && (
+          <LocalWorkoutView 
+            userId={userId} 
+            selectedExercise={selectedExercise}
+            setView={setView} 
+          />
+        )}
 
-      {view === 'workout' && (
-        <WorkoutArea 
-          userId={userId} 
-          workoutExercises={workoutExercises} 
-          setView={setView}
-          onWorkoutLogged={() => setView('analytics')}
-        />
-      )}
+        {view === 'workout' && (
+          <WorkoutArea 
+            userId={userId} 
+            workoutExercises={workoutExercises} 
+            setView={setView}
+            onWorkoutLogged={() => setView('analytics')}
+          />
+        )}
 
-      {view === 'analytics' && (
-        <Analytics userId={userId} setView={setView} />
-      )}
+        {view === 'analytics' && (
+          <Analytics userId={userId} setView={setView} />
+        )}
 
+        {view === 'photos' && (
+          <ProgressPhotos userId={userId} setView={setView} />
+        )}
 
+        {view === 'profile' && (
+          <ProfileView userId={userId} userName={userName} handleLogout={handleLogout} />
+        )}
+      </div>
 
-      {view === 'photos' && (
-        <ProgressPhotos userId={userId} setView={setView} />
+      {/* --- WORKOUT LOGS MODAL --- */}
+      {showWorkoutsModal && dashboardData && dashboardData.completed_today && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-[#0b0e14] p-8 rounded-3xl border border-white/10 animate-fade-in-up relative">
+            
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-xl font-extrabold tracking-tight text-white">Today's Completed Workouts</h3>
+                <p className="text-xs text-dark-muted mt-1">
+                  A track of all posture-analyzed sessions logged today
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 border border-brand-gold/20 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-brand-gold" />
+              </div>
+            </div>
+
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              {dashboardData.completed_today.map((w, idx) => (
+                <div key={idx} className="flex justify-between items-center bg-white/5 px-4 py-3.5 rounded-2xl border border-white/5 hover:border-white/10 transition-all">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-slate-200 capitalize">
+                      {w.exercise.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-xs text-dark-muted font-medium mt-1">
+                      {w.sets} sets × {w.reps} reps • {w.duration ? Number(w.duration).toFixed(1) : '0.0'} min
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-brand-mint bg-brand-mint/10 px-2 py-1 rounded-lg border border-brand-mint/15">
+                    {Math.round(w.accuracy)}% Acc
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-6 flex justify-end">
+              <button 
+                onClick={() => setShowWorkoutsModal(false)}
+                className="w-full py-3.5 bg-dark-border/40 hover:bg-dark-border/60 transition-colors font-semibold rounded-xl text-xs text-white"
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
     </div>
   );

@@ -561,6 +561,25 @@ def get_progress_photos(user_id: int, db: Session = Depends(get_db)):
     return photos
 
 
+@app.delete("/api/photos/{photo_id}")
+def delete_progress_photo(photo_id: int, db: Session = Depends(get_db)):
+    photo = db.query(models.ProgressPhoto).filter(models.ProgressPhoto.id == photo_id).first()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    
+    try:
+        filename = os.path.basename(photo.photo_path)
+        local_filepath = os.path.join(UPLOAD_DIR, filename)
+        if os.path.exists(local_filepath):
+            os.remove(local_filepath)
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+
+    db.delete(photo)
+    db.commit()
+    return {"status": "success", "message": "Photo deleted"}
+
+
 # --- WEBSOCKET REAL-TIME AI ENGINE ---
 
 @app.websocket("/ws/track/{user_id}")

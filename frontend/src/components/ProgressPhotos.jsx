@@ -1,6 +1,6 @@
 // frontend/src/components/ProgressPhotos.jsx
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Upload, Grid, ShieldAlert, Sparkles } from 'lucide-react';
+import { ChevronLeft, Upload, Grid, ShieldAlert, Sparkles, Trash2 } from 'lucide-react';
 
 export default function ProgressPhotos({ userId, setView }) {
   const [photos, setPhotos] = useState([]);
@@ -80,6 +80,27 @@ export default function ProgressPhotos({ userId, setView }) {
     } else {
       // Overwrite the Current (Photo B) slot if both are filled
       setPhotoB(photo);
+    }
+  };
+
+  const handleDeletePhoto = async (e, photoId) => {
+    e.stopPropagation(); // Avoid triggering selection click handler
+    if (!window.confirm("Are you sure you want to delete this progress photo?")) return;
+
+    try {
+      const res = await fetch(`http://localhost:8000/api/photos/${photoId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('Delete failed');
+      
+      // If the deleted photo is currently selected in comparison panels, deselect it
+      if (photoA && photoA.id === photoId) setPhotoA(null);
+      if (photoB && photoB.id === photoId) setPhotoB(null);
+
+      // Refresh list
+      await fetchPhotos();
+    } catch (e) {
+      alert("Error deleting photo: " + e.message);
     }
   };
 
@@ -242,6 +263,14 @@ export default function ProgressPhotos({ userId, setView }) {
                       alt="History item" 
                       className="w-full h-full object-cover"
                     />
+                    {/* Delete button (displays on hover) */}
+                    <button
+                      onClick={(e) => handleDeletePhoto(e, ph.id)}
+                      className="absolute top-2 right-2 p-1.5 bg-brand-coral/95 hover:bg-brand-coral text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 shadow-md hover:scale-105 active:scale-95"
+                      title="Delete Photo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 p-2 text-center text-[9px] font-bold text-white tracking-wide">
                       {new Date(ph.date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'})}
                     </div>

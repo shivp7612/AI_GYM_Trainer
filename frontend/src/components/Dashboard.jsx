@@ -65,7 +65,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
         payload.calories_kcal = amount;
       }
 
-      const res = await fetch(`http://localhost:8000/api/intake/${userId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/intake/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -95,7 +95,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
   const handleReadinessCheck = async () => {
     setCalculatingReadiness(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/readiness/${userId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/readiness/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

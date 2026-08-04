@@ -16,7 +16,7 @@ function LocalWorkoutView({ userId, selectedExercise, setView }) {
 
   const launchLocal = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/workout/start_local/${userId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/workout/start_local/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ exercise: selectedExercise ? selectedExercise.key : 'squat' })
@@ -111,7 +111,7 @@ export default function App() {
     const targetUserId = uid || userId;
     if (!targetUserId) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/dashboard/${targetUserId}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/dashboard/${targetUserId}`);
       if (res.ok) {
         const json = await res.json();
         setDashboardData(json);
@@ -132,7 +132,7 @@ export default function App() {
         payload.protein_grams = amount;
       }
 
-      const res = await fetch(`http://localhost:8000/api/intake/${userId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/intake/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

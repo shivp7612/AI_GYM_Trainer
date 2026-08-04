@@ -17,7 +17,7 @@ export default function ProfileView({ userId, userName, handleLogout }) {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/profile/${userId}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/profile/${userId}`);
       if (!res.ok) throw new Error('Could not load user profile details');
       const data = await res.json();
       setProfile(data);
@@ -35,7 +35,7 @@ export default function ProfileView({ userId, userName, handleLogout }) {
   const handleReadinessCheck = async () => {
     setCalculatingReadiness(true);
     try {
-      const res = await fetch('http://localhost:8000/api/readiness/' + userId, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/readiness/` + userId, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

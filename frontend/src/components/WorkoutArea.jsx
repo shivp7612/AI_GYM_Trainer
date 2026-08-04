@@ -97,7 +97,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
 
   // Connect WebSocket
   const connectWebSocket = () => {
-    const ws = new WebSocket(`ws://localhost:8000/ws/track/${userId}`);
+    const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/track/${userId}`);
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -302,7 +302,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
   const submitWorkoutLog = async () => {
     setSavingLog(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/workout/finish/${userId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/workout/finish/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(summaryData)

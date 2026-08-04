@@ -14,12 +14,12 @@ export default function Analytics({ userId, setView }) {
 
   const fetchData = async () => {
     try {
-      const analRes = await fetch(`http://localhost:8000/api/workout/analytics/${userId}`);
+      const analRes = await fetch(`${import.meta.env.VITE_API_URL}/api/workout/analytics/${userId}`);
       if (!analRes.ok) throw new Error('Analytics loading failed');
       const analData = await analRes.json();
       setAnalytics(analData);
 
-      const histRes = await fetch(`http://localhost:8000/api/workout/history/${userId}`);
+      const histRes = await fetch(`${import.meta.env.VITE_API_URL}/api/workout/history/${userId}`);
       if (!histRes.ok) throw new Error('History loading failed');
       const histData = await histRes.json();
       setHistory(histData);
@@ -36,7 +36,7 @@ export default function Analytics({ userId, setView }) {
 
   const handleDownloadReport = async (sessionId) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/workout/report/${userId}/${sessionId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/workout/report/${userId}/${sessionId}`);
       if (!response.ok) throw new Error('Report download failed');
       
       const blob = await response.blob();

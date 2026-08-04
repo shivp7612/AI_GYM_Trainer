@@ -52,7 +52,7 @@ export default function Onboarding({ onFinish }) {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/login', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -94,7 +94,7 @@ export default function Onboarding({ onFinish }) {
 
     try {
       // 1. Register User
-      const regRes = await fetch('http://localhost:8000/api/register', {
+      const regRes = await fetch(`${import.meta.env.VITE_API_URL}/api/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,7 +125,7 @@ export default function Onboarding({ onFinish }) {
         diet_pref: dietPref
       };
 
-      const profRes = await fetch(`http://localhost:8000/api/profile?user_id=${user.id}`, {
+      const profRes = await fetch(`${import.meta.env.VITE_API_URL}/api/profile?user_id=${user.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profilePayload)

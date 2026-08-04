@@ -10,7 +10,7 @@ export default function WorkoutSelection({ userId, workoutExercises, setView, on
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/workout/exercises');
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/workout/exercises`);
         if (!res.ok) throw new Error('Failed to fetch exercises definition');
         const json = await res.json();
         setExercisesData(json);

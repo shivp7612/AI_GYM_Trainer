@@ -14,7 +14,7 @@ export default function ProgressPhotos({ userId, setView }) {
 
   const fetchPhotos = async () => {
     try {
-      const res = await fetch(`http://localhost:8000/api/photos/${userId}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/photos/${userId}`);
       if (!res.ok) throw new Error('Failed to load photos');
       const data = await res.json();
       setPhotos(data);
@@ -46,7 +46,7 @@ export default function ProgressPhotos({ userId, setView }) {
     formData.append('file', file);
 
     try {
-      const res = await fetch(`http://localhost:8000/api/photos/upload/${userId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/photos/upload/${userId}`, {
         method: 'POST',
         body: formData
       });
@@ -88,7 +88,7 @@ export default function ProgressPhotos({ userId, setView }) {
     if (!window.confirm("Are you sure you want to delete this progress photo?")) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/photos/${photoId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/photos/${photoId}`, {
         method: 'DELETE'
       });
       if (!res.ok) throw new Error('Delete failed');
@@ -182,7 +182,7 @@ export default function ProgressPhotos({ userId, setView }) {
               {photoA ? (
                 <>
                   <img 
-                    src={`http://localhost:8000${photoA.photo_path}`} 
+                    src={`${import.meta.env.VITE_API_URL}${photoA.photo_path}`} 
                     alt="Progress A" 
                     className="w-full h-full object-cover"
                   />
@@ -215,7 +215,7 @@ export default function ProgressPhotos({ userId, setView }) {
               {photoB ? (
                 <>
                   <img 
-                    src={`http://localhost:8000${photoB.photo_path}`} 
+                    src={`${import.meta.env.VITE_API_URL}${photoB.photo_path}`} 
                     alt="Progress B" 
                     className="w-full h-full object-cover"
                   />
@@ -259,7 +259,7 @@ export default function ProgressPhotos({ userId, setView }) {
                     }`}
                   >
                     <img 
-                      src={`http://localhost:8000${ph.photo_path}`} 
+                      src={`${import.meta.env.VITE_API_URL}${ph.photo_path}`} 
                       alt="History item" 
                       className="w-full h-full object-cover"
                     />

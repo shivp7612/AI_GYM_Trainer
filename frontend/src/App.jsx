@@ -266,14 +266,38 @@ export default function App() {
               
 
 
-              {/* Consistency Tracker */}
-              <div className="bg-dark-border/15 border border-white/5 rounded-xl p-3 space-y-2">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Trophy className="w-3.5 h-3.5 text-brand-gold" />
-                    <span className="text-xs font-semibold text-slate-300">Streak</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
+              {/* Consistency Tracker (Futuristic Circular Progress Ring) */}
+              <div className="bg-dark-border/10 border border-white/5 rounded-2xl p-4 flex items-center gap-4 hover:border-brand-gold/30 hover:bg-dark-border/20 transition-all duration-300 futuristic-glow-gold relative overflow-hidden group">
+                <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(245,158,11,0.04),transparent)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                {/* SVG Progress Ring */}
+                <div className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
+                  <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="19"
+                      className="stroke-white/5 fill-transparent"
+                      strokeWidth="3"
+                    />
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="19"
+                      className="stroke-brand-gold fill-transparent progress-ring-circle"
+                      strokeWidth="3"
+                      strokeDasharray={2 * Math.PI * 19}
+                      strokeDashoffset={2 * Math.PI * 19 - (dashboardData.workout_completion / 100) * (2 * Math.PI * 19)}
+                      strokeLinecap="round"
+                      style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.45))' }}
+                    />
+                  </svg>
+                  <Trophy className="w-4 h-4 text-brand-gold relative z-10 animate-pulse" />
+                </div>
+                
+                {/* Text and Actions */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start gap-1">
+                    <span className="text-xs font-bold text-slate-300">Streak</span>
                     {dashboardData.completed_today && dashboardData.completed_today.length > 0 && (
                       <button 
                         onClick={() => setShowWorkoutsModal(true)}
@@ -282,14 +306,9 @@ export default function App() {
                         View
                       </button>
                     )}
-                    <span className="text-[10px] font-bold text-dark-muted">{dashboardData.workout_streak} Days ({dashboardData.workout_completion}%)</span>
                   </div>
-                </div>
-                <div className="w-full h-1 bg-dark-border rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-brand-gold rounded-full transition-all duration-300" 
-                    style={{ width: `${dashboardData.workout_completion}%` }}
-                  ></div>
+                  <span className="text-sm font-black text-white block mt-1">{dashboardData.workout_streak} <span className="text-[10px] text-dark-muted font-bold">Days</span></span>
+                  <span className="text-[9px] font-bold text-brand-gold block mt-0.5">{dashboardData.workout_completion}% Completed</span>
                 </div>
               </div>
             </div>

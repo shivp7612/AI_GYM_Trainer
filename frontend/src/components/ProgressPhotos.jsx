@@ -19,12 +19,12 @@ export default function ProgressPhotos({ userId, setView }) {
       const data = await res.json();
       setPhotos(data);
       
-      // Auto select first photo if available
+      // Auto select newest photo as Photo B (Current) and older as Photo A (Earlier)
       if (data.length > 0) {
-        setPhotoA(data[0]);
+        setPhotoB(data[0]);
       }
       if (data.length > 1) {
-        setPhotoB(data[1]);
+        setPhotoA(data[1]);
       }
     } catch (e) {
       console.error(e);
@@ -62,15 +62,24 @@ export default function ProgressPhotos({ userId, setView }) {
   };
 
   const selectPhoto = (photo) => {
-    // Alternate selection
+    // If already selected, deselect it
+    if (photoA && photoA.id === photo.id) {
+      setPhotoA(null);
+      return;
+    }
+    if (photoB && photoB.id === photo.id) {
+      setPhotoB(null);
+      return;
+    }
+    
+    // Assign to first available slot
     if (!photoA) {
       setPhotoA(photo);
-    } else if (!photoB && photo.id !== photoA.id) {
+    } else if (!photoB) {
       setPhotoB(photo);
     } else {
-      // Both selected, swap B out
-      setPhotoA(photo);
-      setPhotoB(null);
+      // Overwrite the Current (Photo B) slot if both are filled
+      setPhotoB(photo);
     }
   };
 

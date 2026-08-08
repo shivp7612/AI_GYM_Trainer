@@ -378,10 +378,13 @@ export default function App() {
           <WorkoutSelection 
             userId={userId} 
             workoutExercises={workoutExercises} 
-            setView={setView} 
+            setView={(newView) => {
+              if (newView === 'select-workout') setSelectedExercise(null);
+              setView(newView);
+            }} 
             onSelectExercise={(key, name) => {
               setSelectedExercise({ key, name });
-              setView('workout'); // Changed from 'local-workout' to 'workout' to use web tracker
+              setView('workout');
             }}
           />
         )}
@@ -397,9 +400,15 @@ export default function App() {
         {view === 'workout' && (
           <WorkoutArea 
             userId={userId} 
-            workoutExercises={selectedExercise ? [[selectedExercise.key, selectedExercise.name]] : workoutExercises} 
-            setView={setView}
-            onWorkoutLogged={() => setView('analytics')}
+            workoutExercises={selectedExercise ? [[selectedExercise.key, selectedExercise.name]] : (workoutExercises || [])} 
+            setView={(newView) => {
+              setSelectedExercise(null);
+              setView(newView);
+            }}
+            onWorkoutLogged={() => {
+              setSelectedExercise(null);
+              setView('analytics');
+            }}
           />
         )}
 

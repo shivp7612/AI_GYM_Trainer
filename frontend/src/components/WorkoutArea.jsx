@@ -2,7 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { 
   Dumbbell, Play, Pause, RefreshCw, X, ShieldAlert, 
-  Volume2, VolumeX, Droplet, Flame, Compass, Award 
+  Volume2, VolumeX, Droplet, Flame, Compass, Award,
+  Maximize2, Minimize2
 } from 'lucide-react';
 
 export default function WorkoutArea({ userId, workoutExercises, restDuration, setView, onWorkoutLogged }) {
@@ -11,6 +12,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
   const currentCleanName = workoutExercises[exerciseIndex] ? workoutExercises[exerciseIndex][1] : 'Squat';
 
   const [isRunning, setIsRunning] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isResting, setIsResting] = useState(false);
   const [restTimeLeft, setRestTimeLeft] = useState(restDuration || 90);
   
@@ -19,6 +21,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
   const [sets, setSets] = useState(1);
   const [stage, setStage] = useState('-');
   const [activeAngle, setActiveAngle] = useState(0);
+  const [romPct, setRomPct] = useState(0);
   const [accuracy, setAccuracy] = useState(100);
   const [fatigue, setFatigue] = useState(0);
   const [stresses, setStresses] = useState({ lumbar: 'Low', knee: 'Low', shoulder: 'Low', neck: 'Low' });
@@ -30,11 +33,13 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
   // Audio state
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const lastSpokenRef = useRef(0);
+  const lastSpokenTextRef = useRef('');
 
   // Water reminder state
   const [showWaterReminder, setShowWaterReminder] = useState(false);
 
   // References
+  const containerRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const wsRef = useRef(null);
@@ -52,22 +57,55 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
   const [summaryData, setSummaryData] = useState(null);
   const [savingLog, setSavingLog] = useState(false);
 
-  // Voice speech synthesizer
+  // Cancel speech immediately when voiceEnabled becomes false
+  useEffect(() => {
+    if (!voiceEnabled && typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  }, [voiceEnabled]);
+
+  // Voice speech synthesizer with deduplication & throttling
   const speakText = (text) => {
-    if (!voiceEnabled || !text) return;
+    if (!voiceEnabled || !text) {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      return;
+    }
     const now = Date.now();
-    // Throttle speech to once every 4 seconds to avoid overlapping voices
-    if (now - lastSpokenRef.current < 4000) return;
+    // Do NOT repeat the exact same text string unless 15 seconds have passed
+    if (text === lastSpokenTextRef.current && now - lastSpokenRef.current < 15000) {
+      return;
+    }
+    // Throttle any speech by at least 3 seconds
+    if (now - lastSpokenRef.current < 3000) return;
     
     try {
-      window.speechSynthesis.cancel(); // Cancel any current speech
+      window.speechSynthesis.cancel(); // Cancel previous speech
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
       window.speechSynthesis.speak(utterance);
       lastSpokenRef.current = now;
+      lastSpokenTextRef.current = text;
     } catch (e) {
       console.warn("Speech synthesis error", e);
+    }
+  };
+
+  // Toggle true Fullscreen view
+  const toggleFullscreen = () => {
+    const nextState = !isFullscreen;
+    setIsFullscreen(nextState);
+    
+    if (nextState) {
+      if (containerRef.current && containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
     }
   };
 
@@ -126,6 +164,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
       setReps(data.reps || 0);
       setStage(data.stage || '-');
       setActiveAngle(data.active_angle || 0);
+      setRomPct(data.rom_pct || 0);
       setAccuracy(data.form_accuracy !== undefined ? data.form_accuracy : 100);
       setFatigue(data.fatigue !== undefined ? data.fatigue : 0);
       setStresses(data.stresses || { lumbar: 'Low', knee: 'Low', shoulder: 'Low', neck: 'Low' });
@@ -272,6 +311,13 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
     disconnectWebSocket();
     setIsRunning(false);
 
+    if (isFullscreen) {
+      setIsFullscreen(false);
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
     // Calculate metrics
     const duration = roundValue((Date.now() - startTime) / 60000.0, 1);
     const avgAcc = accuraciesList.length > 0 ? Math.round(accuraciesList.reduce((a,b)=>a+b, 0) / accuraciesList.length) : 88;
@@ -362,7 +408,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
     const activeColor = isVerified ? "#10B981" : "#F43F5E"; // green if verified, red if not
 
     return (
-      <svg className="absolute inset-0 w-full h-full pointer-events-none z-20">
+      <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 scale-x-[-1]">
         {/* Torso */}
         {renderBone(11, 12, activeColor)}
         {renderBone(11, 23, activeColor)}
@@ -448,9 +494,21 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
           >
             {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
           </button>
+
+          <button 
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Exit Full Screen" : "Full Screen Camera"}
+            className="w-10 h-10 rounded-xl bg-dark-border/40 hover:bg-dark-border/60 border border-white/5 text-slate-300 hover:text-white flex items-center justify-center transition-all"
+          >
+            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+          </button>
           
           <button 
-            onClick={() => setIsRunning(!isRunning)}
+            onClick={() => {
+              const nextState = !isRunning;
+              setIsRunning(nextState);
+              if (nextState && !isFullscreen) toggleFullscreen();
+            }}
             className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
               isRunning 
                 ? 'bg-brand-coral hover:bg-brand-coral/90 shadow-md shadow-brand-coral/20' 
@@ -467,7 +525,14 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
         
         {/* LEFT COLUMN: CAMERA MODULE HUD */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="relative aspect-video rounded-3xl bg-dark-card border border-white/5 overflow-hidden shadow-2xl flex items-center justify-center">
+          <div 
+            ref={containerRef}
+            className={`transition-all duration-300 ${
+              isFullscreen 
+                ? 'fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[99999] bg-black flex items-center justify-center p-0 m-0 overflow-hidden' 
+                : 'relative aspect-video rounded-3xl bg-dark-card border border-white/5 overflow-hidden shadow-2xl flex items-center justify-center'
+            }`}
+          >
             
             {currentEx === 'treadmill' ? (
               <div className="absolute inset-0 bg-dark-card z-40 flex flex-col justify-center items-center text-center p-8">
@@ -497,7 +562,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
                   autoPlay 
                   playsInline 
                   muted 
-                  className="w-full h-full object-cover scale-x-[-1] z-10" // Mirror camera
+                  className="w-full h-full object-contain scale-x-[-1] z-10" // Mirror camera with object-contain for 1:1 landmark precision
                 />
 
                 {/* Hidden Frame Grab Canvas */}
@@ -505,6 +570,64 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
 
                 {/* Neon Landmark SVG overlay */}
                 {renderSkeleton()}
+
+                {/* Floating Top HUD Metrics Bar (STAGE, REPS, ROM %, SCORE %, ANGLE °) */}
+                {isRunning && (
+                  <div className="absolute top-4 left-4 right-4 z-40 flex items-center justify-between pointer-events-auto">
+                    <div className="flex items-center gap-2.5 bg-black/80 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 shadow-2xl flex-wrap">
+                      <span className="font-extrabold text-xs text-white capitalize tracking-wide pr-1">{currentCleanName.replace(/_/g, ' ')}</span>
+                      <div className="h-4 w-[1px] bg-white/20"></div>
+                      
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">STAGE:</span>
+                        <span className={`text-xs font-black px-2 py-0.5 rounded-md ${
+                          stage === 'UP' ? 'bg-brand-purple/30 text-brand-purple border border-brand-purple/30' : 
+                          stage === 'DOWN' ? 'bg-brand-mint/30 text-brand-mint border border-brand-mint/30' : 
+                          stage === 'LOCKED' ? 'bg-rose-500/30 text-rose-400 border border-rose-500/30' : 'text-slate-400'
+                        }`}>{stage}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">REPS:</span>
+                        <span className="text-sm font-black text-brand-mint">{reps}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">ROM:</span>
+                        <span className="text-sm font-black text-brand-gold">{romPct}%</span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">SCORE:</span>
+                        <span className="text-sm font-black text-brand-purple">{accuracy}%</span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-dark-muted font-bold uppercase tracking-wider">ANGLE:</span>
+                        <span className="text-sm font-black text-amber-400">{activeAngle}°</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {isFullscreen && (
+                        <button 
+                          onClick={() => setIsRunning(!isRunning)}
+                          className="px-4 py-2 bg-brand-coral hover:bg-brand-coral/90 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-1.5"
+                        >
+                          {isRunning ? <><Pause className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> Resume</>}
+                        </button>
+                      )}
+
+                      <button
+                        onClick={toggleFullscreen}
+                        className="w-10 h-10 rounded-xl bg-black/80 backdrop-blur-md border border-white/10 text-white flex items-center justify-center hover:bg-black/90 transition-all shadow-lg"
+                        title={isFullscreen ? "Exit Full Screen" : "Full Screen View"}
+                      >
+                        {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -535,26 +658,17 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
               </div>
             )}
 
-            {/* WRONG EXERCISE BANNER */}
-            {!isVerified && isRunning && (
-              <div className="absolute bottom-0 left-0 right-0 bg-brand-coral border-t border-brand-coral/45 p-4 z-20 flex gap-3 text-white">
-                <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5 animate-bounce" />
-                <div>
-                  <h4 className="font-extrabold text-xs tracking-wider uppercase">WRONG EXERCISE DETECTED</h4>
-                  <p className="text-[10px] text-white/95 mt-0.5 leading-relaxed">
-                    {warningMsg || `Please perform a ${currentCleanName} movement - locking rep count.`}
+            {/* EXERCISE POSTURE CORRECTION BANNER (Photo 5 style) */}
+            {(!isVerified || warningMsg) && isRunning && (
+              <div className="absolute bottom-4 left-4 right-4 bg-brand-coral/95 backdrop-blur-md border border-brand-coral/60 p-4 rounded-2xl z-30 flex gap-3 text-white shadow-2xl animate-fade-in-up">
+                <ShieldAlert className="w-6 h-6 flex-shrink-0 mt-0.5 animate-bounce text-white" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-extrabold text-xs tracking-wider uppercase">
+                    {!isVerified ? 'WRONG EXERCISE DETECTED!' : 'POSTURE WARNING'}
+                  </h4>
+                  <p className="text-xs text-white/95 mt-1 font-semibold leading-relaxed">
+                    {warningMsg || `Position incorrect for ${currentCleanName.replace(/_/g, ' ')}. Please perform correct posture movement.`}
                   </p>
-                </div>
-              </div>
-            )}
-
-            {/* Form Warnings HUD banner */}
-            {isVerified && warningMsg && isRunning && (
-              <div className="absolute bottom-4 left-4 right-4 bg-brand-coral/90 backdrop-blur-md border border-brand-coral/40 p-4 rounded-2xl z-20 flex gap-3 text-white">
-                <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5 animate-pulse" />
-                <div>
-                  <h4 className="font-extrabold text-xs tracking-wider uppercase">POSTURE WARNING</h4>
-                  <p className="text-xs text-white/95 mt-0.5 font-semibold">{warningMsg}</p>
                 </div>
               </div>
             )}
@@ -683,7 +797,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
               </div>
               <div className="bg-dark-border/20 border border-white/5 rounded-2xl p-4 text-center">
                 <span className="text-xs text-dark-muted font-semibold uppercase block mb-1">Calories</span>
-                <span className="text-xl font-black text-brand-coral">{intake_today.calories + summaryData.calories_burned}</span>
+                <span className="text-xl font-black text-brand-coral">{summaryData.calories_burned} kcal</span>
               </div>
               <div className="bg-dark-border/20 border border-white/5 rounded-2xl p-4 text-center">
                 <span className="text-xs text-dark-muted font-semibold uppercase block mb-1">Accuracy</span>

@@ -160,188 +160,168 @@ class ExerciseVerifier:
         return True, ""
 
     # ──────────────────────────────────────────────────────────────
-    # Category: ARMS  (Bicep Curl, Tricep Pushdown, etc.)
-    # Signature: Standing upright + upper arm pinned to side
-    # Discriminator: arm_abduction SMALL (arm at side, NOT raised)
-    # Fails if: arms raised sideways (Shoulder), arms in front (Chest),
-    #           legs being used (Legs), body tilted (Core)
+    # Category: ARMS  (Bicep Curl, Tricep Pushdown, Overhead Tricep Extension)
     # ──────────────────────────────────────────────────────────────
     def _check_arms(self, avg_abduction, avg_torso,
                     l_wrist_low, r_wrist_low, exercise):
 
         # Must be standing upright
-        if avg_torso < 140:
+        if avg_torso < 135:
             return False, f"Stand upright for {exercise.replace('_',' ').title()}"
 
-        # Core discriminator: upper arm must be mostly vertical (at side)
-        # Abduction < 45° means arm is alongside body — this is the ARMS signature
         if exercise == "overhead_tricep_extension":
-            # Special case: arm is OVERHEAD — wrists above head
-            # We check this in shoulders actually, but for tricep extension,
-            # the elbows are bent overhead — check elbow is high
+            # Arm/wrists must be overhead above shoulders
+            if l_wrist_low and r_wrist_low:
+                return (False,
+                        "WRONG EXERCISE! Raise dumbbells overhead behind your head for Overhead Tricep Extension")
             return True, ""
 
-        if avg_abduction > 60:
+        if exercise == "tricep_pushdown":
+            if avg_abduction > 50:
+                return (False,
+                        "WRONG EXERCISE! Arms flared outward. For Tricep Pushdown: keep upper arms pinned to ribs and push down")
+            return True, ""
+
+        if exercise == "bicep_curl":
+            if avg_abduction > 50:
+                return (False,
+                        "WRONG EXERCISE! Arms raised/flared outward. For Bicep Curl: keep upper arms pinned to your sides and curl upward")
+            return True, ""
+
+        if avg_abduction > 55:
             return (False,
-                    "WRONG! Arms raised = Shoulder exercise. "
-                    f"For {exercise.replace('_',' ').title()}: keep upper arm at your side")
+                    f"WRONG EXERCISE! For {exercise.replace('_',' ').title()}: keep upper arms pinned to your sides")
 
         return True, ""
 
     # ──────────────────────────────────────────────────────────────
-    # Category: CHEST  (Bench Press, Incline Press, Cable Fly)
-    # Signature: Arms extended/abducted outward OR body reclined
-    # Discriminator: arm_abduction LARGE or body horizontal
-    # CRITICAL: If arm_abduction is small (arm at side) → it's an ARMS exercise!
+    # Category: CHEST  (Bench Press, Incline Press, Cable Fly, Pushups)
     # ──────────────────────────────────────────────────────────────
     def _check_chest(self, avg_abduction, avg_torso,
                      l_wrist_low, r_wrist_low, exercise):
 
-        # ── Bench Press / Incline Press: body should be reclined
-        if exercise in ("barbell_bench_press", "incline_dumbbell_press"):
-            # When lying/reclined, torso angle collapses (landmarks nearly co-linear
-            # at a lower angle as seen from front camera, or body appears foreshortened)
-            # Also: arms should be abducted (flared out) for pressing
-            if avg_abduction < 40:
+        # ── Bench Press / Incline Press / Pushups
+        if exercise in ("barbell_bench_press", "incline_dumbbell_press", "dumbbell_bench_press", "pushups"):
+            if avg_abduction < 35:
                 return (False,
-                        "WRONG EXERCISE! You are doing an ARMS movement. "
-                        "For Bench/Incline Press: lie on bench and press bar/dumbbells upward")
+                        f"WRONG EXERCISE! Arms are at your sides. For {exercise.replace('_',' ').title()}: flare elbows outward and press weights away from chest")
+
+            # CRITICAL DISCRIMINATOR: If torso is upright AND wrists press overhead -> That's a Shoulder Press, NOT an Incline/Flat Bench Press!
+            if (not l_wrist_low or not r_wrist_low) and avg_torso > 155:
+                return (False,
+                        f"WRONG EXERCISE! You are doing an Overhead Shoulder Press! For {exercise.replace('_',' ').title()}: recline your bench/torso at an angle and press forward over your chest")
+
             return True, ""
 
-        # ── Cable Fly / Pec Deck: arms spread wide then brought together
-        if exercise == "cable_fly_pec_deck":
-            if avg_abduction < 40:
+        # ── Cable Fly / Pec Deck
+        if exercise == "cable_fly_pec_deck" or exercise == "dumbbell_fly":
+            if avg_abduction < 35:
                 return (False,
-                        "WRONG EXERCISE! Arms are at your sides — that's a Bicep Curl. "
-                        "For Cable Fly: spread arms wide to the sides at shoulder height")
+                        f"WRONG EXERCISE! Arms are at your sides. For {exercise.replace('_',' ').title()}: spread arms wide to the sides at chest level")
             return True, ""
 
-        # Generic chest fallback
-        if avg_abduction < 40:
-            return (False,
-                    "WRONG EXERCISE! Keep arms extended outward, not at your sides")
+        if avg_abduction < 35:
+            return (False, f"WRONG EXERCISE! Keep arms extended outward for {exercise.replace('_',' ').title()}")
         return True, ""
 
     # ──────────────────────────────────────────────────────────────
-    # Category: SHOULDERS  (Lateral Raise, Front Raise, OHP, etc.)
-    # Signature: Arms raised — elbow or wrist at/above shoulder level
+    # Category: SHOULDERS  (Overhead Press, Lateral Raise, Front Raise, OHP, etc.)
     # ──────────────────────────────────────────────────────────────
     def _check_shoulders(self, avg_abduction,
                           l_elbow_up, r_elbow_up,
                           l_wrist_up, r_wrist_up, exercise):
 
-        elbow_raised   = l_elbow_up or r_elbow_up
-        wrist_raised   = l_wrist_up or r_wrist_up
+        elbow_raised = l_elbow_up or r_elbow_up
+        wrist_raised = l_wrist_up or r_wrist_up
 
         if exercise == "overhead_press":
-            if not (wrist_raised or avg_abduction > 60):
+            if not (wrist_raised or avg_abduction > 55):
                 return (False,
-                        "WRONG EXERCISE! Raise bar/dumbbells to at least shoulder level "
-                        "for Overhead Press")
+                        "WRONG EXERCISE! Position weights at shoulders and press overhead for Overhead Press")
             return True, ""
 
         if exercise in ("lateral_raise", "front_raise"):
-            if avg_abduction < 25 and not elbow_raised:
+            if avg_abduction < 30 and not elbow_raised:
                 return (False,
-                        f"WRONG EXERCISE! Arms are at your sides. "
-                        f"Raise arms outward/forward for {exercise.replace('_',' ').title()}")
+                        f"WRONG EXERCISE! Arms are at your sides. Raise arms outward/forward to shoulder level for {exercise.replace('_',' ').title()}")
             return True, ""
 
         if exercise in ("upright_row", "face_pull"):
             if not elbow_raised and avg_abduction < 30:
                 return (False,
-                        f"WRONG EXERCISE! Pull elbows up high for "
-                        f"{exercise.replace('_',' ').title()}")
+                        f"WRONG EXERCISE! Pull elbows up high to shoulder height for {exercise.replace('_',' ').title()}")
             return True, ""
 
-        # Generic shoulder fallback
-        if avg_abduction < 25 and not elbow_raised:
-            return (False, "Raise your arms for this shoulder exercise")
+        if avg_abduction < 30 and not elbow_raised:
+            return (False, f"Raise your arms for {exercise.replace('_',' ').title()}")
         return True, ""
 
     # ──────────────────────────────────────────────────────────────
     # Category: BACK  (Rows, Pulldowns, Pull-ups)
-    # Signature: Torso hinged forward OR arms pulling from overhead
     # ──────────────────────────────────────────────────────────────
     def _check_back(self, avg_torso, avg_elbow,
                     l_wrist_up, r_wrist_up, exercise):
 
-        # Pull-ups / Lat Pulldown: wrists must start above head
         if exercise in ("pullup_chinup", "lat_pulldown"):
             if not (l_wrist_up or r_wrist_up):
                 return (False,
-                        "WRONG EXERCISE! Reach arms overhead and grab the bar "
-                        f"for {exercise.replace('_',' ').title()}")
+                        f"WRONG EXERCISE! Reach arms overhead to grab the bar for {exercise.replace('_',' ').title()}")
             return True, ""
 
-        # Rows / Romanian DL: torso should be hinged forward
-        if exercise in ("barbell_row", "seated_cable_row", "straight_arm_pulldown"):
-            if avg_torso > 160:
+        if exercise in ("barbell_row", "seated_cable_row", "straight_arm_pulldown", "deadlift"):
+            if avg_torso > 165 and exercise == "barbell_row":
                 return (False,
-                        "WRONG EXERCISE! Hinge forward or sit upright at machine "
-                        f"for {exercise.replace('_',' ').title()}")
+                        "WRONG EXERCISE! Hinge forward at the hips for Barbell Row")
             return True, ""
 
         return True, ""
 
     # ──────────────────────────────────────────────────────────────
-    # Category: LEGS  (Squat, Leg Press, Lunges, etc.)
-    # Signature: Knees bent OR hip hinge active
-    # Discriminator: knee angle must be below 155° at some point
-    # Fails if: person stands fully straight doing an arm exercise
+    # Category: LEGS  (Squat, Leg Press, Lunges, Deadlift, etc.)
     # ──────────────────────────────────────────────────────────────
     def _check_legs(self, avg_knee, avg_torso, exercise):
 
-        if exercise in ("romanian_deadlift",):
-            if avg_torso > 160:
+        if exercise == "romanian_deadlift":
+            if avg_torso > 165:
                 return (False,
-                        "WRONG EXERCISE! Hinge at hips (lean forward) "
-                        "for Romanian Deadlift")
+                        "WRONG EXERCISE! Hinge forward at hips with flat back for Romanian Deadlift")
             return True, ""
 
         if exercise == "hip_thrust":
             if avg_torso > 150:
                 return (False,
-                        "WRONG EXERCISE! Position with back on bench and hips low "
-                        "for Hip Thrust")
+                        "WRONG EXERCISE! Position back against bench with hips low for Hip Thrust")
             return True, ""
 
-        # For all squat/knee-dominant exercises: knees must show some bend
-        if avg_knee > 168:
+        # For Squat and leg movements: knees must show bending motion
+        if avg_knee > 165 and exercise == "squat":
             return (False,
-                    "WRONG EXERCISE! You are standing straight — "
-                    f"bend your knees for {exercise.replace('_',' ').title()}")
+                    "WRONG EXERCISE! You are standing straight — bend your knees and lower your hips for Squat")
         return True, ""
 
     # ──────────────────────────────────────────────────────────────
     # Category: CORE  (Crunches, Leg Raises, Russian Twist)
-    # Signature: Body tilted / horizontal, not upright
     # ──────────────────────────────────────────────────────────────
     def _check_core(self, avg_torso, exercise):
         if avg_torso > 160:
             return (False,
-                    "WRONG EXERCISE! Get into position: "
-                    f"lie down or sit at an angle for {exercise.replace('_',' ').title()}")
+                    f"WRONG EXERCISE! Get into position: lie down or sit at an angle for {exercise.replace('_',' ').title()}")
         return True, ""
 
     # ──────────────────────────────────────────────────────────────
     # Category: TRAPS / FOREARMS  (Shrugs, Wrist Curl)
-    # Signature: Arms mostly straight, standing, slight shoulder elevation
     # ──────────────────────────────────────────────────────────────
     def _check_traps_forearms(self, avg_abduction, avg_elbow, exercise):
         if exercise == "wrist_curl":
-            # Forearms should be resting on thighs → elbows bent ~90°
-            if avg_elbow > 130:
+            if avg_elbow > 135:
                 return (False,
-                        "WRONG EXERCISE! Sit with forearms on thighs, "
-                        "wrists hanging over knees for Wrist Curl")
+                        "WRONG EXERCISE! Rest forearms on thighs with wrists over knees for Wrist Curl")
             return True, ""
 
         if exercise == "shrugs":
-            if avg_abduction > 60:
+            if avg_abduction > 55:
                 return (False,
-                        "WRONG EXERCISE! Stand with arms straight at sides "
-                        "and shrug shoulders upward")
+                        "WRONG EXERCISE! Stand with arms straight at sides and shrug shoulders upward for Shrugs")
             return True, ""
 
         return True, ""

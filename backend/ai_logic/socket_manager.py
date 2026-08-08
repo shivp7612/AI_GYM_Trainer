@@ -155,20 +155,35 @@ class WorkoutSocketSession:
         # 5. Verify correct muscle category active
         is_verified, verify_msg = self.exercise_verifier.verify(self.current_exercise, lmList)
 
+        # Calculate Range of Motion (ROM) %
+        up_angle = stats["up"]
+        down_angle = stats["down"]
+        range_total = abs(up_angle - down_angle)
+        rom_pct = 0
+        if range_total > 0:
+            if up_angle > down_angle:
+                rom_pct = int(((active_angle - down_angle) / range_total) * 100)
+            else:
+                rom_pct = int(((down_angle - active_angle) / range_total) * 100)
+        rom_pct = max(0, min(100, rom_pct))
+
         if not is_verified:
+            self.motion_profiler.stage = "-"
+            self.stage = "-"
             return {
                 "verified": False,
                 "landmarks": react_landmarks,
-                "message": verify_msg if verify_msg else "Incorrect exercise movement detected!",
+                "message": verify_msg if verify_msg else f"Incorrect posture for {self.current_exercise.replace('_',' ').title()}",
                 "reps": self.reps_count,
                 "sets": self.sets_count,
-                "stage": self.stage,
+                "stage": "LOCKED",
                 "active_angle": int(active_angle),
+                "rom_pct": 0,
                 "form_accuracy": 0,
                 "fatigue": 0,
                 "stresses": {"lumbar": "Low", "knee": "Low", "shoulder": "Low", "neck": "Low"},
                 "risk_score": "Low",
-                "warning": "Wrong exercise form",
+                "warning": verify_msg if verify_msg else f"Position incorrect for {self.current_exercise.replace('_',' ').title()}",
                 "water_reminder": False
             }
 
@@ -217,23 +232,10 @@ class WorkoutSocketSession:
         fatigue_val, fatigue_recom = self.fatigue_tracker.update_frame_data(lmList, active_joint_idx)
         self.fatigues.append(fatigue_val)
 
-        # Compile final advice/warning override
-        advice = fatigue_recom
+        # Compile exercise posture warning (only output when form is actually wrong or high risk)
+        advice = ""
         if warning_msg:
             advice = warning_msg
-        elif risk_level == "High":
-            # Select specific joint load warning
-            for joint, stress in stresses.items():
-                if stress == "High":
-                    if joint == "shoulder":
-                        advice = "WARNING: High Shoulder Load! Reduce weight or tuck elbows lower."
-                    elif joint == "lumbar":
-                        advice = "WARNING: High Lumbar Stress! Flatten your back and brace core."
-                    elif joint == "knee":
-                        advice = "WARNING: Knee Stress High! Avoid caving or pushing knees too far forward."
-                    elif joint == "neck":
-                        advice = "WARNING: Neck Stress High! Keep head neutral, don't look up/down."
-                    break
 
         # 11. Stage 11: Water intake reminder (Every 3 minutes / 180 seconds during training)
         water_remind = False
@@ -250,6 +252,7 @@ class WorkoutSocketSession:
             "sets": self.sets_count,
             "stage": self.stage,
             "active_angle": int(active_angle),
+            "rom_pct": rom_pct,
             "form_accuracy": score,
             "fatigue": int(fatigue_val),
             "stresses": stresses,

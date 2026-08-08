@@ -8,7 +8,7 @@ export const getApiUrl = () => {
   // If running on Vercel but envUrl is empty or points to localhost
   if (isProduction && (!envUrl || envUrl.includes('localhost') || envUrl.includes('127.0.0.1'))) {
     // Default production Render backend fallback
-    return 'https://ai-gym-backend-tvrg.onrender.com';
+    return 'https://ai-gym-backend-tvnk.onrender.com';
   }
 
   return envUrl || 'http://localhost:8000';
@@ -21,7 +21,7 @@ export const getWsUrl = (userId) => {
                        window.location.hostname !== '127.0.0.1';
 
   if (isProduction && (!envWs || envWs.includes('localhost') || envWs.includes('127.0.0.1'))) {
-    return `wss://ai-gym-backend-tvrg.onrender.com/ws/track/${userId}`;
+    return `wss://ai-gym-backend-tvnk.onrender.com/ws/track/${userId}`;
   }
 
   let baseUrl = envWs || getApiUrl();

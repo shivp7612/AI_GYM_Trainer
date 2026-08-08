@@ -56,6 +56,10 @@ if not os.path.exists(UPLOAD_DIR):
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
+@app.get("/")
+def read_root():
+    return {"status": "online", "message": "AI Gym Trainer Backend API Live", "version": "1.0.0"}
+
 
 # --- AUTH & REGISTRATION ---
 

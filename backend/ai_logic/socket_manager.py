@@ -76,20 +76,28 @@ class WorkoutSocketSession:
         img = self.pose_detector.findPose(img, draw=False)
         lmList = self.pose_detector.getLandmarks(img)
 
-        if len(lmList) < 29:
+        # Determine minimum required landmarks based on exercise category
+        stats = ALL_EXERCISES.get(self.current_exercise, {})
+        cat = stats.get("category", "")
+        min_required = 17 # Upper body (head, shoulders, elbows, wrists)
+        if cat in ("Legs", "Core"):
+            min_required = 27 # Lower body needs hips, knees, ankles
+
+        if len(lmList) < min_required:
             return {
                 "verified": False,
                 "landmarks": [],
-                "message": "Stand fully in the camera's view (entire body visible)",
+                "message": f"Step back so your {'full body' if cat in ('Legs','Core') else 'upper body'} is visible in camera",
                 "reps": self.reps_count,
                 "sets": self.sets_count,
                 "stage": self.stage,
                 "active_angle": 0,
+                "rom_pct": 0,
                 "form_accuracy": 0,
                 "fatigue": 0,
                 "stresses": {"lumbar": "Low", "knee": "Low", "shoulder": "Low", "neck": "Low"},
                 "risk_score": "Low",
-                "warning": "",
+                "warning": f"Please position your {'full body' if cat in ('Legs','Core') else 'upper body'} in frame",
                 "water_reminder": False
             }
 

@@ -244,11 +244,11 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
       connectWebSocket();
       // Wait for video meta to initialize loop
       const checkVideo = setInterval(() => {
-        if (videoRef.current && videoRef.current.readyState >= 3) {
+        if (videoRef.current && (videoRef.current.readyState >= 1 || videoRef.current.videoWidth > 0)) {
           startFrameLoop();
           clearInterval(checkVideo);
         }
-      }, 200);
+      }, 100);
     } else {
       stopCamera();
       disconnectWebSocket();

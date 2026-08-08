@@ -1,10 +1,10 @@
-// frontend/src/components/WorkoutArea.jsx
 import React, { useEffect, useRef, useState } from 'react';
 import { 
   Dumbbell, Play, Pause, RefreshCw, X, ShieldAlert, 
   Volume2, VolumeX, Droplet, Flame, Compass, Award,
   Maximize2, Minimize2
 } from 'lucide-react';
+import { getApiUrl, getWsUrl } from '../config';
 
 export default function WorkoutArea({ userId, workoutExercises, restDuration, setView, onWorkoutLogged }) {
   const [exerciseIndex, setExerciseIndex] = useState(0);
@@ -133,35 +133,10 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
     }
   };
 
-  // Helper to format WebSocket URL safely across HTTP / HTTPS / localhost / Vercel / Render
-  const getWebSocketUrl = () => {
-    let url = import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || '';
-    if (!url) {
-      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
-      const protocol = isHttps ? 'wss:' : 'ws:';
-      const host = typeof window !== 'undefined' ? window.location.host : 'localhost:8000';
-      return `${protocol}//${host}/ws/track/${userId}`;
-    }
-    // Convert http -> ws and https -> wss
-    if (url.startsWith('https://')) {
-      url = url.replace('https://', 'wss://');
-    } else if (url.startsWith('http://')) {
-      url = url.replace('http://', 'ws://');
-    }
-    url = url.replace(/\/$/, '');
-    
-    // Force wss:// if page is HTTPS (Vercel)
-    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
-      url = url.replace('ws://', 'wss://');
-    }
-
-    return `${url}/ws/track/${userId}`;
-  };
-
   // Connect WebSocket
   const connectWebSocket = () => {
     try {
-      const wsTarget = getWebSocketUrl();
+      const wsTarget = getWsUrl(userId);
       console.log("Connecting WebSocket to:", wsTarget);
       const ws = new WebSocket(wsTarget);
       wsRef.current = ws;
@@ -384,7 +359,7 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
   const submitWorkoutLog = async () => {
     setSavingLog(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/workout/finish/${userId}`, {
+      const res = await fetch(`${getApiUrl()}/api/workout/finish/${userId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(summaryData)

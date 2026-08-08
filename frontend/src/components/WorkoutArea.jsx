@@ -133,67 +133,103 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
     }
   };
 
+  // Helper to format WebSocket URL safely across HTTP / HTTPS / localhost / Vercel / Render
+  const getWebSocketUrl = () => {
+    let url = import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL || '';
+    if (!url) {
+      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      const protocol = isHttps ? 'wss:' : 'ws:';
+      const host = typeof window !== 'undefined' ? window.location.host : 'localhost:8000';
+      return `${protocol}//${host}/ws/track/${userId}`;
+    }
+    // Convert http -> ws and https -> wss
+    if (url.startsWith('https://')) {
+      url = url.replace('https://', 'wss://');
+    } else if (url.startsWith('http://')) {
+      url = url.replace('http://', 'ws://');
+    }
+    url = url.replace(/\/$/, '');
+    
+    // Force wss:// if page is HTTPS (Vercel)
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('ws://')) {
+      url = url.replace('ws://', 'wss://');
+    }
+
+    return `${url}/ws/track/${userId}`;
+  };
+
   // Connect WebSocket
   const connectWebSocket = () => {
-    const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}/ws/track/${userId}`);
-    wsRef.current = ws;
+    try {
+      const wsTarget = getWebSocketUrl();
+      console.log("Connecting WebSocket to:", wsTarget);
+      const ws = new WebSocket(wsTarget);
+      wsRef.current = ws;
 
-    ws.onopen = () => {
-      // Send active exercise configuration
-      ws.send(JSON.stringify({
-        event: 'config',
-        exercise: currentEx
-      }));
-    };
+      ws.onopen = () => {
+        console.log("WebSocket connected successfully");
+        // Send active exercise configuration
+        ws.send(JSON.stringify({
+          event: 'config',
+          exercise: currentEx
+        }));
+      };
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.error) {
-        console.error(data.error);
-        return;
-      }
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) {
+          console.error(data.error);
+          return;
+        }
 
-      if (data.event === 'summary') {
-        // Summary payload received from backend
-        return;
-      }
+        if (data.event === 'summary') {
+          // Summary payload received from backend
+          return;
+        }
 
-      // Update state parameters
-      setIsVerified(data.verified);
-      setLandmarks(data.landmarks || []);
-      setReps(data.reps || 0);
-      setStage(data.stage || '-');
-      setActiveAngle(data.active_angle || 0);
-      setRomPct(data.rom_pct || 0);
-      setAccuracy(data.form_accuracy !== undefined ? data.form_accuracy : 100);
-      setFatigue(data.fatigue !== undefined ? data.fatigue : 0);
-      setStresses(data.stresses || { lumbar: 'Low', knee: 'Low', shoulder: 'Low', neck: 'Low' });
-      setRiskScore(data.risk_score || 'Low');
-      
-      const cleanWarning = data.warning || '';
-      setWarningMsg(cleanWarning);
+        // Update state parameters
+        setIsVerified(data.verified);
+        setLandmarks(data.landmarks || []);
+        setReps(data.reps || 0);
+        setStage(data.stage || '-');
+        setActiveAngle(data.active_angle || 0);
+        setRomPct(data.rom_pct || 0);
+        setAccuracy(data.form_accuracy !== undefined ? data.form_accuracy : 100);
+        setFatigue(data.fatigue !== undefined ? data.fatigue : 0);
+        setStresses(data.stresses || { lumbar: 'Low', knee: 'Low', shoulder: 'Low', neck: 'Low' });
+        setRiskScore(data.risk_score || 'Low');
+        
+        const cleanWarning = data.warning || '';
+        setWarningMsg(cleanWarning);
 
-      // Save accuracies/fatigues for local calculations
-      if (data.verified && data.form_accuracy > 0) {
-        setAccuraciesList(prev => [...prev, data.form_accuracy]);
-        setFatiguesList(prev => [...prev, data.fatigue]);
-      }
+        // Save accuracies/fatigues for local calculations
+        if (data.verified && data.form_accuracy > 0) {
+          setAccuraciesList(prev => [...prev, data.form_accuracy]);
+          setFatiguesList(prev => [...prev, data.fatigue]);
+        }
 
-      // Voice Warning trigger
-      if (cleanWarning) {
-        speakText(cleanWarning);
-      }
+        // Voice Warning trigger
+        if (cleanWarning) {
+          speakText(cleanWarning);
+        }
 
-      // Water intake reminder trigger
-      if (data.water_reminder) {
-        setShowWaterReminder(true);
-        speakText("Time to drink water. Two hundred and fifty milliliters recommended.");
-      }
-    };
+        // Water intake reminder trigger
+        if (data.water_reminder) {
+          setShowWaterReminder(true);
+          speakText("Time to drink water. Two hundred and fifty milliliters recommended.");
+        }
+      };
 
-    ws.onclose = () => {
-      console.log("WebSocket disconnected");
-    };
+      ws.onerror = (err) => {
+        console.error("WebSocket connection error:", err);
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket disconnected");
+      };
+    } catch (err) {
+      console.error("Failed to initialize WebSocket connection:", err);
+    }
   };
 
   // Disconnect WebSocket

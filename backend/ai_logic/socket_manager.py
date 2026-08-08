@@ -76,31 +76,6 @@ class WorkoutSocketSession:
         img = self.pose_detector.findPose(img, draw=False)
         lmList = self.pose_detector.getLandmarks(img)
 
-        # Determine minimum required landmarks based on exercise category
-        stats = ALL_EXERCISES.get(self.current_exercise, {})
-        cat = stats.get("category", "")
-        min_required = 17 # Upper body (head, shoulders, elbows, wrists)
-        if cat in ("Legs", "Core"):
-            min_required = 27 # Lower body needs hips, knees, ankles
-
-        if len(lmList) < min_required:
-            return {
-                "verified": False,
-                "landmarks": [],
-                "message": f"Step back so your {'full body' if cat in ('Legs','Core') else 'upper body'} is visible in camera",
-                "reps": self.reps_count,
-                "sets": self.sets_count,
-                "stage": self.stage,
-                "active_angle": 0,
-                "rom_pct": 0,
-                "form_accuracy": 0,
-                "fatigue": 0,
-                "stresses": {"lumbar": "Low", "knee": "Low", "shoulder": "Low", "neck": "Low"},
-                "risk_score": "Low",
-                "warning": f"Please position your {'full body' if cat in ('Legs','Core') else 'upper body'} in frame",
-                "water_reminder": False
-            }
-
         # 3. Format landmarks to return to React for high-performance canvas overlays
         react_landmarks = []
         for lm in lmList:
@@ -111,6 +86,31 @@ class WorkoutSocketSession:
                 "y": round(lm[2] / h * 100, 1),
                 "z": round(lm[3], 2)
             })
+
+        # Determine minimum required landmarks based on exercise category
+        stats = ALL_EXERCISES.get(self.current_exercise, {})
+        cat = stats.get("category", "")
+        min_required = 15 # Head, shoulders, arms
+        if cat in ("Legs", "Core"):
+            min_required = 25 # Lower body needs hips & knees
+
+        if len(lmList) < min_required:
+            return {
+                "verified": False,
+                "landmarks": react_landmarks,
+                "message": f"Step back so your {'full body' if cat in ('Legs','Core') else 'upper body'} is visible in camera",
+                "reps": self.reps_count,
+                "sets": self.sets_count,
+                "stage": "LOCKED",
+                "active_angle": 0,
+                "rom_pct": 0,
+                "form_accuracy": 0,
+                "fatigue": 0,
+                "stresses": {"lumbar": "Low", "knee": "Low", "shoulder": "Low", "neck": "Low"},
+                "risk_score": "Low",
+                "warning": f"Position your {'full body' if cat in ('Legs','Core') else 'upper body'} in frame for {self.current_exercise.replace('_',' ').title()}",
+                "water_reminder": False
+            }
 
         # 4. Check exercise configuration
         if self.current_exercise not in ALL_EXERCISES:

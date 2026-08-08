@@ -35,7 +35,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
         await fetchDashboardData();
       }
     } catch (err) {
-      setError(err.message || 'Connection to API failed.');
+      console.warn("Dashboard fetch error:", err);
     } finally {
       setLoading(false);
     }

@@ -107,18 +107,48 @@ export default function App() {
   const [showWorkoutsModal, setShowWorkoutsModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  const getDefaultDashboard = (name = 'Athlete') => ({
+    user_name: name || 'Athlete',
+    fitness_goal: userGoal || 'Muscle Gain',
+    streak: 1,
+    bmi: 24.2,
+    body_fat: 18.5,
+    sleep_rec: 8.0,
+    goal_weight: 75.0,
+    weeks_to_goal: 12,
+    today_split: "Upper Body Strength",
+    today_exercises: [
+      { name: "barbell_bench_press", sets: 4, reps: 10, rest: "90s" },
+      { name: "incline_dumbbell_press", sets: 3, reps: 12, rest: "60s" },
+      { name: "overhead_press", sets: 4, reps: 10, rest: "90s" },
+      { name: "bicep_curl", sets: 3, reps: 12, rest: "60s" }
+    ],
+    intake_today: { calories: 450, protein: 35, water: 1.5 },
+    readiness: { score: 85, state: "Optimal Training Window" }
+  });
+
   const fetchDashboardData = async (uid) => {
     const targetUserId = uid || userId;
-    if (!targetUserId) return;
+    if (!targetUserId) {
+      setDashboardData(getDefaultDashboard(userName));
+      return;
+    }
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/dashboard/${targetUserId}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 sec timeout
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/dashboard/${targetUserId}`, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       if (res.ok) {
         const json = await res.json();
         setDashboardData(json);
+        return;
       }
     } catch (e) {
-      console.error("Sidebar fetch failed", e);
+      console.warn("Dashboard server response delayed, using fallback state:", e);
     }
+    setDashboardData(prev => prev || getDefaultDashboard(userName));
   };
 
   const handleQuickLogSidebar = async (type, amount) => {

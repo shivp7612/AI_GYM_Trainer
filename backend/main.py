@@ -632,6 +632,13 @@ async def websocket_tracking_endpoint(websocket: WebSocket, user_id: int):
                 session.set_exercise(exercise_name)
                 await websocket.send_json({"status": "ready", "exercise": exercise_name})
                 
+            elif event == "client_landmarks":
+                landmarks_list = data.get("landmarks", [])
+                if "exercise" in data:
+                    session.set_exercise(data.get("exercise"))
+                result = session.process_client_landmarks(landmarks_list)
+                await websocket.send_json(result)
+
             elif event == "frame":
                 image_b64 = data.get("image", "")
                 if "exercise" in data:

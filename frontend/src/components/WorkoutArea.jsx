@@ -219,39 +219,125 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
     }
   };
 
+  const poseRef = useRef(null);
+
+  // Initialize Client-Side MediaPipe Pose for 60 FPS zero-latency landmark tracking
+  const initPoseDetector = () => {
+    if (window.Pose && !poseRef.current) {
+      try {
+        const pose = new window.Pose({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+        });
+        pose.setOptions({
+          modelComplexity: 1,
+          smoothLandmarks: true,
+          enableSegmentation: false,
+          minDetectionConfidence: 0.3,
+          minTrackingConfidence: 0.3
+        });
+        pose.onResults(onPoseResults);
+        poseRef.current = pose;
+      } catch (err) {
+        console.error("Client MediaPipe initialization error:", err);
+      }
+    }
+  };
+
+  const onPoseResults = (results) => {
+    if (!results || !results.poseLandmarks) return;
+
+    const lmList = results.poseLandmarks.map((lm, id) => ({
+      id,
+      x: lm.x * 100,
+      y: lm.y * 100,
+      z: lm.z
+    }));
+
+    // Update landmarks for instant neon overlay drawing
+    setLandmarks(lmList);
+
+    // Calculate active joint angle locally for instant UI update
+    const p = results.poseLandmarks;
+    if (p && p.length > 26) {
+      const calcAngle = (p1, p2, p3) => {
+        const rad = Math.atan2(p3.y - p2.y, p3.x - p2.x) - Math.atan2(p1.y - p2.y, p1.x - p2.x);
+        let deg = Math.abs((rad * 180.0) / Math.PI);
+        if (deg > 180.0) deg = 360.0 - deg;
+        return Math.round(deg);
+      };
+
+      let angle = 0;
+      if (currentEx.includes('curl') || currentEx.includes('press') || currentEx.includes('row')) {
+        const lArm = calcAngle(p[11], p[13], p[15]);
+        const rArm = calcAngle(p[12], p[14], p[16]);
+        angle = Math.min(lArm, rArm);
+      } else if (currentEx.includes('squat') || currentEx.includes('lunge') || currentEx.includes('leg')) {
+        const lLeg = calcAngle(p[23], p[25], p[27]);
+        const rLeg = calcAngle(p[24], p[26], p[28]);
+        angle = Math.min(lLeg, rLeg);
+      } else if (currentEx.includes('deadlift') || currentEx.includes('hinge')) {
+        const lHinge = calcAngle(p[11], p[23], p[25]);
+        const rHinge = calcAngle(p[12], p[24], p[26]);
+        angle = Math.min(lHinge, rHinge);
+      } else {
+        angle = calcAngle(p[11], p[13], p[15]);
+      }
+
+      if (angle > 0) {
+        setActiveAngle(angle);
+        setIsVerified(true);
+      }
+    }
+
+    // Send lightweight keypoints to WebSocket backend
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        event: 'client_landmarks',
+        landmarks: lmList,
+        exercise: currentEx
+      }));
+    }
+  };
+
   // Start frame capturing loops
   const startFrameLoop = () => {
+    initPoseDetector();
     if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
 
     frameIntervalRef.current = setInterval(() => {
       const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!video || !canvas || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || isResting) return;
+      if (!video || isResting) return;
 
       if (video.videoWidth > 0 && video.videoHeight > 0) {
-        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+        if (poseRef.current) {
+          poseRef.current.send({ image: video }).catch(() => {});
+        } else {
+          // Fallback WebSocket base64 stream
+          const canvas = canvasRef.current;
+          if (canvas && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+            }
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const jpegBase64 = canvas.toDataURL('image/jpeg', 0.5);
+            wsRef.current.send(JSON.stringify({
+              event: 'frame',
+              image: jpegBase64,
+              exercise: currentEx
+            }));
+          }
         }
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const jpegBase64 = canvas.toDataURL('image/jpeg', 0.5);
-
-        wsRef.current.send(JSON.stringify({
-          event: 'frame',
-          image: jpegBase64,
-          exercise: currentEx
-        }));
       }
-    }, 130);
+    }, 100);
   };
 
   useEffect(() => {
     if (isRunning && !isResting) {
       startCamera();
       connectWebSocket();
-      // Wait for video meta to initialize loop
+      initPoseDetector();
       const checkVideo = setInterval(() => {
         if (videoRef.current && (videoRef.current.readyState >= 1 || videoRef.current.videoWidth > 0)) {
           startFrameLoop();

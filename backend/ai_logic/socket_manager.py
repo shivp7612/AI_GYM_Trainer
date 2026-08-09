@@ -50,6 +50,134 @@ class WorkoutSocketSession:
             self.stage = "-"
             self.sets_count = 1
             self.accuracies = []
+
+    def process_client_landmarks(self, landmarks_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Processes pre-calculated client-side MediaPipe landmarks for zero-latency rep counting and posture rules.
+        """
+        if not self.current_exercise:
+            return {"error": "No exercise selected"}
+
+        if not landmarks_data or len(landmarks_data) < 15:
+            return {
+                "verified": False,
+                "landmarks": landmarks_data or [],
+                "message": "Position yourself in camera view",
+                "reps": self.reps_count,
+                "sets": self.sets_count,
+                "stage": "LOCKED",
+                "active_angle": 0,
+                "rom_pct": 0,
+                "form_accuracy": 0,
+                "fatigue": 0,
+                "stresses": {"lumbar": "Low", "knee": "Low", "shoulder": "Low", "neck": "Low"},
+                "risk_score": "Low",
+                "warning": "Position yourself in camera view",
+                "water_reminder": False
+            }
+
+        # Convert React landmark list [{id, x, y, z}] back to lmList format [id, cx, cy, cz, vis]
+        lmList = []
+        for lm in landmarks_data:
+            lmList.append([lm.get("id", 0), int(lm.get("x", 0) * 6.4), int(lm.get("y", 0) * 4.8), lm.get("z", 0), 0.9])
+
+        # 4. Check exercise configuration
+        if self.current_exercise not in ALL_EXERCISES:
+            return {"error": f"Exercise {self.current_exercise} not recognized"}
+
+        stats = ALL_EXERCISES[self.current_exercise]
+        req_joint = stats["joint"]
+
+        # Map landmarks safely
+        l_shoulder = lmList[11] if len(lmList) > 11 else [11, 0, 0, 0]
+        r_shoulder = lmList[12] if len(lmList) > 12 else [12, 0, 0, 0]
+        l_elbow    = lmList[13] if len(lmList) > 13 else [13, 0, 0, 0]
+        r_elbow    = lmList[14] if len(lmList) > 14 else [14, 0, 0, 0]
+        l_wrist    = lmList[15] if len(lmList) > 15 else [15, 0, 0, 0]
+        r_wrist    = lmList[16] if len(lmList) > 16 else [16, 0, 0, 0]
+        l_hip      = lmList[23] if len(lmList) > 23 else [23, 0, 0, 0]
+        r_hip      = lmList[24] if len(lmList) > 24 else [24, 0, 0, 0]
+        l_knee     = lmList[25] if len(lmList) > 25 else [25, 0, 0, 0]
+        r_knee     = lmList[26] if len(lmList) > 26 else [26, 0, 0, 0]
+        l_ankle    = lmList[27] if len(lmList) > 27 else [27, 0, 0, 0]
+        r_ankle    = lmList[28] if len(lmList) > 28 else [28, 0, 0, 0]
+
+        # Calculate active joint angle
+        active_angle = 0
+        active_joint_idx = 11
+
+        if req_joint == "elbow" and len(lmList) > 16:
+            l_arm = calculate_angle(l_shoulder[1:3], l_elbow[1:3], l_wrist[1:3])
+            r_arm = calculate_angle(r_shoulder[1:3], r_elbow[1:3], r_wrist[1:3])
+            active_angle = min(l_arm, r_arm)
+            active_joint_idx = 13 if l_arm < r_arm else 14
+        elif req_joint == "knee" and len(lmList) > 28:
+            l_leg = calculate_angle(l_hip[1:3], l_knee[1:3], l_ankle[1:3])
+            r_leg = calculate_angle(r_hip[1:3], r_knee[1:3], r_ankle[1:3])
+            active_angle = min(l_leg, r_leg)
+            active_joint_idx = 25 if l_leg < r_leg else 26
+        elif req_joint == "hip" and len(lmList) > 26:
+            l_hinge = calculate_angle(l_shoulder[1:3], l_hip[1:3], l_knee[1:3])
+            r_hinge = calculate_angle(r_shoulder[1:3], r_hip[1:3], r_knee[1:3])
+            active_angle = min(l_hinge, r_hinge)
+            active_joint_idx = 23 if l_hinge < r_hinge else 24
+        elif req_joint == "shoulder" and len(lmList) > 24:
+            l_sh = calculate_angle(l_hip[1:3], l_shoulder[1:3], l_elbow[1:3])
+            r_sh = calculate_angle(r_hip[1:3], r_shoulder[1:3], r_elbow[1:3])
+            active_angle = max(l_sh, r_sh)
+            active_joint_idx = 11 if l_sh > r_sh else 12
+
+        # ROM %
+        up_angle = stats["up"]
+        down_angle = stats["down"]
+        range_total = abs(up_angle - down_angle)
+        rom_pct = 0
+        if range_total > 0:
+            if up_angle > down_angle:
+                rom_pct = int(((active_angle - down_angle) / range_total) * 100)
+            else:
+                rom_pct = int(((down_angle - active_angle) / range_total) * 100)
+        rom_pct = max(0, min(100, rom_pct))
+
+        is_verified, verify_msg = self.exercise_verifier.verify(self.current_exercise, lmList)
+
+        if is_verified:
+            stage, reps = self.motion_profiler.process_angle(self.current_exercise, active_angle)
+            self.stage = stage
+            self.reps_count = reps
+
+        accuracy = self.motion_profiler.calculate_form_accuracy(self.current_exercise, active_angle, is_verified)
+        self.accuracies.append(accuracy)
+
+        stresses, fatigue, risk_score = self.biomechanics.analyze(
+            lmList=lmList,
+            exercise=self.current_exercise,
+            stage=self.stage,
+            form_accuracy=accuracy
+        )
+
+        warning_text = ""
+        if not is_verified:
+            warning_text = verify_msg
+        elif accuracy < 75:
+            warning_text = f"Keep proper form for {self.current_exercise.replace('_',' ').title()}"
+
+        return {
+            "verified": is_verified,
+            "landmarks": landmarks_data,
+            "message": "Tracking active" if is_verified else verify_msg,
+            "reps": self.reps_count,
+            "sets": self.sets_count,
+            "stage": self.stage,
+            "active_angle": int(active_angle),
+            "rom_pct": rom_pct,
+            "form_accuracy": int(accuracy),
+            "fatigue": int(fatigue),
+            "stresses": stresses,
+            "risk_score": risk_score,
+            "warning": warning_text,
+            "water_reminder": False
+        }
             
     def process_frame(self, image_b64: str) -> Dict[str, Any]:
         """

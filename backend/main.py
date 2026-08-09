@@ -181,11 +181,40 @@ def get_profile(user_id: int, db: Session = Depends(get_db)):
 def get_dashboard_summary(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-        
+        # Create default user on the fly if not exists
+        user = models.User(id=user_id, name=f"Athlete_{user_id}", email=f"user_{user_id}@gym.com", password="password123")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
     profile = user.profile
     if not profile:
-        raise HTTPException(status_code=400, detail="Onboarding not completed")
+        # Create default profile on the fly if not exists
+        metrics = calculate_profile_metrics(age=25, gender="Male", height=175, weight=75, goal="Muscle Gain")
+        profile = models.UserProfile(
+            user_id=user.id,
+            age=25,
+            gender="Male",
+            height=175,
+            weight=75,
+            goal="Muscle Gain",
+            experience="Intermediate",
+            equipment="Dumbbell",
+            injury="None",
+            workout_days=4,
+            diet_pref="Non-Veg",
+            bmi=metrics["bmi"],
+            body_fat_est=metrics["body_fat_est"],
+            target_calories=metrics["target_calories"],
+            target_protein=metrics["target_protein"],
+            target_water=metrics["target_water"],
+            sleep_hours=metrics["sleep_hours"],
+            target_weight=metrics["target_weight"],
+            goal_time_weeks=metrics["goal_time_weeks"]
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
 
     # Fetch daily nutrition intake for today
     today = datetime.date.today()

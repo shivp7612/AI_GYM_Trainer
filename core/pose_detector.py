@@ -3,12 +3,12 @@ import cv2
 import mediapipe as mp
 
 class PoseDetector:
-    def __init__(self, mode=False, upBody=False, smooth=True, detectionCon=0.5, trackCon=0.5):
+    def __init__(self, mode=False, upBody=False, smooth=True, detectionCon=0.3, trackCon=0.3):
         self.mpDraw = mp.solutions.drawing_utils
         self.mpPose = mp.solutions.pose
         self.pose = self.mpPose.Pose(
             static_image_mode=mode,
-            model_complexity=1,
+            model_complexity=0,
             smooth_landmarks=smooth,
             min_detection_confidence=detectionCon,
             min_tracking_confidence=trackCon

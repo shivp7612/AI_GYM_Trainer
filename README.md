@@ -1,6 +1,6 @@
 # ⚡ AI Gym Trainer - Real-Time Posture Analytics & Injury Prevention
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://ai-gym-trainer-6b2lpg0rw-shivaprasadtengli39-2300s-projects.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://ai-gym-trainer-git-main-shivprasadtlengli39-2300s-projects.vercel.app)
 [![Backend Status](https://img.shields.io/badge/Backend%20API-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://ai-gym-backend-tvnk.onrender.com)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org)
@@ -41,7 +41,7 @@ An end-to-end, AI-powered computer vision fitness application that monitors exer
 
 ## 🚀 Live Deployment
 
-- **Frontend App**: [https://ai-gym-trainer-6b2lpg0rw-shivaprasadtengli39-2300s-projects.vercel.app/](https://ai-gym-trainer-6b2lpg0rw-shivaprasadtengli39-2300s-projects.vercel.app/)
+- **Frontend App**: [https://ai-gym-trainer-git-main-shivprasadtlengli39-2300s-projects.vercel.app](https://ai-gym-trainer-git-main-shivprasadtlengli39-2300s-projects.vercel.app)
 - **Backend API**: [https://ai-gym-backend-tvnk.onrender.com](https://ai-gym-backend-tvnk.onrender.com)
 
 ---

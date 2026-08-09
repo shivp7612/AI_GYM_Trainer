@@ -618,25 +618,22 @@ def delete_progress_photo(photo_id: int, db: Session = Depends(get_db)):
 @app.websocket("/ws/track/{user_id}")
 async def websocket_tracking_endpoint(websocket: WebSocket, user_id: int):
     await websocket.accept()
-    
     session = WorkoutSocketSession()
     
-    try:
-        while True:
-            # Receive data from client
-            data = await websocket.receive_json()
+    import json
+    while True:
+        try:
+            data_str = await websocket.receive_text()
+            data = json.loads(data_str)
             
             event = data.get("event")
             if event == "config":
-                # User starts an exercise
                 exercise_name = data.get("exercise", "")
                 session.set_exercise(exercise_name)
                 await websocket.send_json({"status": "ready", "exercise": exercise_name})
                 
             elif event == "frame":
                 image_b64 = data.get("image", "")
-                
-                # Check for updates from frontend (if rest or sets changes)
                 if "exercise" in data:
                     session.set_exercise(data.get("exercise"))
                     
@@ -644,16 +641,21 @@ async def websocket_tracking_endpoint(websocket: WebSocket, user_id: int):
                 await websocket.send_json(result)
                 
             elif event == "finish":
-                # Session complete, send final stats
                 summary = session.get_summary_metrics()
                 await websocket.send_json({"event": "summary", "data": summary})
-                
-    except WebSocketDisconnect:
-        # Gracefully handle disconnects
-        pass
-    except Exception as e:
-        print(f"WebSocket error: {str(e)}")
-        try:
-            await websocket.send_json({"error": str(e)})
-        except:
-            pass
+
+        except WebSocketDisconnect:
+            print(f"WebSocket client {user_id} disconnected")
+            break
+        except Exception as e:
+            print(f"Frame processing error: {e}")
+            try:
+                await websocket.send_json({
+                    "verified": False,
+                    "landmarks": [],
+                    "message": "Analyzing pose...",
+                    "active_angle": 0,
+                    "warning": ""
+                })
+            except:
+                break

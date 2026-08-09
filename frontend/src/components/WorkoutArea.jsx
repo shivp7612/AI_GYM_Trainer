@@ -200,7 +200,12 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
       };
 
       ws.onclose = () => {
-        console.log("WebSocket disconnected");
+        console.log("WebSocket disconnected - attempting auto-reconnect in 1.5s...");
+        if (isRunning && !isResting) {
+          setTimeout(() => {
+            connectWebSocket();
+          }, 1500);
+        }
       };
     } catch (err) {
       console.error("Failed to initialize WebSocket connection:", err);
@@ -216,26 +221,30 @@ export default function WorkoutArea({ userId, workoutExercises, restDuration, se
 
   // Start frame capturing loops
   const startFrameLoop = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const video = videoRef.current;
+    if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
 
     frameIntervalRef.current = setInterval(() => {
-      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || isResting) return;
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      if (!video || !canvas || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN || isResting) return;
 
-      // Draw video frame to hidden canvas
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Get base64 string
-      const jpegBase64 = canvas.toDataURL('image/jpeg', 0.5); // Compress to 50% quality
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+        }
 
-      // Send to WebSocket
-      wsRef.current.send(JSON.stringify({
-        event: 'frame',
-        image: jpegBase64,
-        exercise: currentEx
-      }));
-    }, 130); // ~7.5 frames per second - low latency and smooth
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const jpegBase64 = canvas.toDataURL('image/jpeg', 0.5);
+
+        wsRef.current.send(JSON.stringify({
+          event: 'frame',
+          image: jpegBase64,
+          exercise: currentEx
+        }));
+      }
+    }, 130);
   };
 
   useEffect(() => {

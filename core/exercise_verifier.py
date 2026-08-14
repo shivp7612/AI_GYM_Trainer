@@ -293,10 +293,14 @@ class ExerciseVerifier:
                         "WRONG EXERCISE! Position back against bench with hips low for Hip Thrust")
             return True, ""
 
-        # For Squat and leg movements: knees must show bending motion
-        if avg_knee > 165 and exercise == "squat":
-            return (False,
-                    "WRONG EXERCISE! You are standing straight — bend your knees and lower your hips for Squat")
+        if exercise == "squat":
+            # The starting position for a squat is standing up (straight knees).
+            # We shouldn't flag it as a wrong exercise just because they are standing.
+            # But we can check if they are lying down or completely horizontal.
+            if avg_torso < 100:
+                return (False, "WRONG EXERCISE! Stand up to perform Squats")
+            return True, ""
+            
         return True, ""
 
     # ──────────────────────────────────────────────────────────────

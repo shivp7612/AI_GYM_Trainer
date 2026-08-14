@@ -35,7 +35,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
         await fetchDashboardData();
       }
     } catch (err) {
-      console.warn("Dashboard fetch error:", err);
+      setError(err.message || 'Connection to API failed.');
     } finally {
       setLoading(false);
     }
@@ -114,32 +114,11 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
     }
   };
 
-  // Default fallback if data is still initializing
-  const activeData = data || {
-    user_name: userName || "Athlete",
-    fitness_goal: "Muscle Gain",
-    streak: 1,
-    bmi: 24.2,
-    body_fat: 18.5,
-    sleep_rec: 8.0,
-    goal_weight: 75.0,
-    weeks_to_goal: 12,
-    today_split: "Upper Body Strength",
-    today_exercises: [
-      { name: "barbell_bench_press", sets: 4, reps: 10, rest: "90s" },
-      { name: "incline_dumbbell_press", sets: 3, reps: 12, rest: "60s" },
-      { name: "overhead_press", sets: 4, reps: 10, rest: "90s" },
-      { name: "bicep_curl", sets: 3, reps: 12, rest: "60s" }
-    ],
-    intake_today: { calories: 450, protein: 35, water: 1.5 },
-    readiness: { score: 85, state: "Optimal Training Window" }
-  };
-
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark text-white">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-brand-purple border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-sm font-semibold tracking-wider text-dark-muted">LOADING DASHBOARD SUMMARY...</p>
         </div>
       </div>
@@ -149,13 +128,13 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark text-white px-4">
-        <div className="glass p-8 rounded-3xl text-center max-w-md border border-brand-coral/20">
-          <ShieldCheck className="w-16 h-16 text-brand-coral mx-auto mb-4" />
+        <div className="glass p-8 rounded-3xl text-center max-w-md border border-brand-secondary/20">
+          <ShieldCheck className="w-16 h-16 text-brand-secondary mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Sync Connection Error</h2>
           <p className="text-sm text-dark-muted mb-6 leading-relaxed">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-brand-purple hover:bg-brand-purple/90 transition-colors font-semibold rounded-xl text-sm"
+            className="px-6 py-3 bg-brand-primary hover:bg-brand-primary/90 transition-colors font-semibold rounded-xl text-sm"
           >
             Retry Connection
           </button>
@@ -164,46 +143,35 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
     );
   }
 
-  const safeData = data || {};
-  const metrics = safeData.metrics || { bmi: 24.2, body_fat_est: 18.5, sleep_hours: 8.0, target_weight: 75.0, goal_time_weeks: 12 };
-  const goals = safeData.goals || { water_target: 3.5, protein_target: 140, calories_target: 2400 };
-  const intake_today = safeData.intake_today || { water: 1.5, protein: 35, calories: 450 };
-  const workout_streak = safeData.workout_streak !== undefined ? safeData.workout_streak : 1;
-  const workout_completion = safeData.workout_completion !== undefined ? safeData.workout_completion : 10;
-  const today_workout_name = safeData.today_workout_name || "Upper Body Strength";
-  const today_exercises = safeData.today_exercises || [
-    { name: "barbell_bench_press", sets: 4, reps: 10, rest: "90s" },
-    { name: "incline_dumbbell_press", sets: 3, reps: 12, rest: "60s" },
-    { name: "overhead_press", sets: 4, reps: 10, rest: "90s" },
-    { name: "bicep_curl", sets: 3, reps: 12, rest: "60s" }
-  ];
-  const workout_details = safeData.workout_details || [];
-  const diet_meals = safeData.diet_meals || {};
-  const diet_macros_target = safeData.diet_macros_target || { carbs: 326, protein: 140, fat: 73 };
-  const completed_today = safeData.completed_today || false;
+  const {
+    metrics, goals, intake_today, workout_streak,
+    workout_completion, today_workout_name, today_exercises,
+    workout_details, diet_meals, diet_macros_target,
+    completed_today
+  } = data;
 
   const currentDayMeals = diet_meals && diet_meals[activeDietDay] ? diet_meals[activeDietDay] : (diet_meals || {});
 
-  const waterPercent = goals.water_target ? Math.min(100, ((intake_today.water || 0) / goals.water_target) * 100) : 40;
-  const proteinPercent = goals.protein_target ? Math.min(100, ((intake_today.protein || 0) / goals.protein_target) * 100) : 35;
-  const caloriesPercent = goals.calories_target ? Math.min(100, ((intake_today.calories || 0) / goals.calories_target) * 100) : 25;
+  const waterPercent = Math.min(100, (intake_today.water / goals.water_target) * 100);
+  const proteinPercent = Math.min(100, (intake_today.protein / goals.protein_target) * 100);
+  const caloriesPercent = Math.min(100, (intake_today.calories / goals.calories_target) * 100);
 
   return (
     <div className="min-h-screen bg-dark text-white pb-16 px-4 md:px-8 relative overflow-hidden select-none">
       {/* High-tech Background Neon Glowing Orbs */}
-      <div className="absolute top-[-10%] left-[20%] w-[600px] h-[600px] rounded-full bg-brand-purple/10 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }}></div>
-      <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] rounded-full bg-brand-mint/5 blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '12s' }}></div>
+      <div className="absolute top-[-10%] left-[20%] w-[600px] h-[600px] rounded-full bg-brand-primary/10 blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }}></div>
+      <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] rounded-full bg-brand-accent/5 blur-[100px] pointer-events-none animate-pulse" style={{ animationDuration: '12s' }}></div>
 
       <div className="max-w-6xl mx-auto pt-8 space-y-8 relative z-10 animate-fade-in-up">
         
         {/* HEADER BAR */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 relative border-b border-white/5">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 relative border-b border-gold/15">
           {/* Radial glow background effect centered right behind text */}
-          <div className="absolute top-[-30px] left-[-30px] w-64 h-64 rounded-full bg-brand-purple/10 blur-3xl pointer-events-none"></div>
+          <div className="absolute top-[-30px] left-[-30px] w-64 h-64 rounded-full bg-gold/10 blur-3xl pointer-events-none"></div>
 
           <div>
             <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white select-none">
-              Heyy <span className="bg-gradient-to-r from-[#818CF8] via-[#A5B4FC] to-[#34D399] bg-clip-text text-transparent">{userName}</span> 👋
+              Heyy <span className="text-white font-extrabold">{userName}</span> 👋
             </h1>
             <p className="text-dark-muted text-xs md:text-sm tracking-wide mt-1.5 max-w-lg font-medium">
               Ready for your session? Optimize performance and prevent injuries today.
@@ -213,14 +181,14 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
           {/* Centered/Right Motivational Thought with high-tech badge design */}
           <div className="flex items-center gap-3 w-full lg:w-auto mt-2 lg:mt-0">
             {/* Glowing Motivational Quote Box */}
-            <div className="glass px-6 py-4 rounded-2xl border border-brand-mint/30 hover:border-brand-mint/60 transition-all duration-500 flex items-center gap-3 shadow-lg relative overflow-hidden group w-full lg:w-auto futuristic-glow-mint">
-              <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(16,185,129,0.1),transparent)] opacity-100 pointer-events-none"></div>
+            <div className="glass px-6 py-4 rounded-2xl border border-gold/30 hover:border-gold/60 transition-all duration-500 flex items-center gap-3 shadow-lg relative overflow-hidden group w-full lg:w-auto futuristic-glow-gold">
+              <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(245,158,11,0.1),transparent)] opacity-100 pointer-events-none"></div>
               {/* Pulsing indicator */}
-              <div className="w-8 h-8 rounded-xl bg-brand-mint/10 border border-brand-mint/20 flex items-center justify-center flex-shrink-0">
-                <Flame className="w-4 h-4 text-brand-mint animate-pulse" />
+              <div className="w-8 h-8 rounded-xl bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0">
+                <Flame className="w-4 h-4 text-gold animate-pulse" />
               </div>
               <div className="text-left">
-                <span className="text-[8px] font-bold text-brand-mint uppercase tracking-widest block">Daily Directive</span>
+                <span className="text-[8px] font-bold text-gold uppercase tracking-widest block">Daily Directive</span>
                 <span className="text-sm font-black text-white tracking-wide">
                   You're built to be epic
                 </span>
@@ -237,15 +205,15 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
             
             {/* WORKOUT PLAN BOX */}
             <div className="futuristic-card p-8 rounded-3xl space-y-6 futuristic-scanner relative overflow-hidden group">
-              <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(99,102,241,0.06),transparent)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+              <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(245,158,11,0.06),transparent)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               <div className="flex justify-between items-center relative z-10">
                 <div>
-                  <span className="text-xs font-bold text-brand-purple tracking-widest uppercase block mb-1">Today's Split</span>
+                  <span className="text-xs font-bold text-gold tracking-widest uppercase block mb-1">Today's Split</span>
                   <h2 className="text-2xl font-extrabold text-white">{today_workout_name}</h2>
                 </div>
                 <button
                   onClick={() => onStartWorkout(today_exercises)}
-                  className="px-6 py-3.5 neon-btn-purple text-white text-sm font-bold rounded-2xl flex items-center gap-1.5 active:scale-95"
+                  className="px-6 py-3.5 neon-btn-gold text-black text-sm font-bold rounded-2xl flex items-center gap-1.5 active:scale-95"
                 >
                   {today_exercises.length > 0 ? "Start Workout" : "Start Custom Workout"} <ChevronRight className="w-4 h-4" />
                 </button>
@@ -253,8 +221,8 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
 
               {/* Safety warning swaps details */}
               {workout_details.injury_swaps && workout_details.injury_swaps.length > 0 && (
-                <div className="bg-brand-coral/5 border border-brand-coral/20 rounded-2xl p-4 flex gap-3 text-xs text-brand-coral font-medium leading-relaxed relative z-10">
-                  <div className="w-5 h-5 flex-shrink-0 bg-brand-coral/10 rounded-lg flex items-center justify-center text-sm font-bold">!</div>
+                <div className="bg-brand-secondary/5 border border-brand-secondary/20 rounded-2xl p-4 flex gap-3 text-xs text-brand-secondary font-medium leading-relaxed relative z-10">
+                  <div className="w-5 h-5 flex-shrink-0 bg-brand-secondary/10 rounded-lg flex items-center justify-center text-sm font-bold">!</div>
                   <div>
                     <span className="font-bold uppercase tracking-wider block mb-1">Injury Safe Mode Active</span>
                     {workout_details.injury_swaps.map((swap, idx) => (
@@ -268,8 +236,8 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
               {today_exercises.length > 0 ? (
                 <div className="space-y-3 relative z-10">
                   {today_exercises.map((ex, idx) => (
-                    <div key={idx} className="flex items-center gap-4 bg-[#121829]/40 border border-white/5 rounded-2xl p-4 hover:border-brand-purple/40 hover:bg-dark-border/25 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 shadow-sm">
-                      <div className="w-10 h-10 bg-brand-purple/20 border border-brand-purple/35 text-white font-extrabold rounded-xl flex items-center justify-center text-sm shadow-inner shadow-brand-purple/10">
+                    <div key={idx} className="flex items-center gap-4 bg-[#121829]/40 border border-white/5 rounded-2xl p-4 hover:border-brand-primary/40 hover:bg-dark-border/25 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 shadow-sm">
+                      <div className="w-10 h-10 bg-brand-primary/20 border border-brand-primary/35 text-white font-extrabold rounded-xl flex items-center justify-center text-sm shadow-inner shadow-brand-primary/10">
                         {idx + 1}
                       </div>
                       <div className="flex-1">
@@ -291,52 +259,13 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
                 </div>
               )}
             </div>
-
-            {/* AI METRICS SUMMARY */}
-            <div className="futuristic-card p-8 rounded-3xl space-y-6 relative overflow-hidden group">
-              <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(99,102,241,0.06),transparent)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-              <h2 className="text-xl font-bold flex items-center gap-2 relative z-10">
-                <HeartPulse className="w-5 h-5 text-brand-purple" />
-                AI Health Profiler Output
-              </h2>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
-                <div className="bg-[#121829]/60 border border-brand-purple/20 hover:border-brand-purple/40 rounded-2xl p-4 text-center transition-all hover:scale-105 futuristic-glow-purple">
-                  <span className="text-2xl font-black block text-brand-purple tracking-tight">{metrics.bmi}</span>
-                  <span className="text-[10px] font-bold text-dark-muted tracking-widest block mt-1 uppercase">Calculated BMI</span>
-                </div>
-                <div className="bg-[#121829]/60 border border-brand-mint/20 hover:border-brand-mint/40 rounded-2xl p-4 text-center transition-all hover:scale-105 futuristic-glow-mint">
-                  <span className="text-2xl font-black block text-brand-mint tracking-tight">{metrics.body_fat_est}%</span>
-                  <span className="text-[10px] font-bold text-dark-muted tracking-widest block mt-1 uppercase">Est Body Fat</span>
-                </div>
-                <div className="bg-[#121829]/60 border border-brand-gold/20 hover:border-brand-gold/40 rounded-2xl p-4 text-center transition-all hover:scale-105 futuristic-glow-gold">
-                  <span className="text-2xl font-black block text-brand-gold tracking-tight">{metrics.sleep_hours} Hrs</span>
-                  <span className="text-[10px] font-bold text-dark-muted tracking-widest block mt-1 uppercase">Sleep Rec</span>
-                </div>
-                <div className="bg-[#121829]/60 border border-brand-coral/20 hover:border-brand-coral/40 rounded-2xl p-4 text-center transition-all hover:scale-105 futuristic-glow-coral">
-                  <span className="text-2xl font-black block text-brand-coral tracking-tight">{metrics.target_weight}kg</span>
-                  <span className="text-[10px] font-bold text-dark-muted tracking-widest block mt-1 uppercase">Goal Weight</span>
-                </div>
-              </div>
-
-              <div className="flex gap-4 items-center bg-[#131b2e]/40 border border-white/5 p-5 rounded-2xl relative z-10 group-hover:border-brand-purple/30 transition-all">
-                <BedDouble className="w-8 h-8 text-brand-purple flex-shrink-0" />
-                <div>
-                  <h4 className="font-bold text-sm">Estimated Timeline to Goal</h4>
-                  <p className="text-xs text-dark-muted mt-1 leading-relaxed">
-                    Based on your weight logs and target goals, you are estimated to reach {metrics.target_weight}kg in approximately <b className="text-brand-purple">{metrics.goal_time_weeks} weeks</b> under safe caloric loads.
-                  </p>
-                </div>
-              </div>
-            </div>
-
           </div>
 
           {/* RIGHT 1 COLUMN: DIET PLAN RECOMMENDATIONS */}
           <div className="futuristic-card p-6 md:p-8 rounded-3xl flex flex-col gap-6 relative overflow-hidden group">
             <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(16,185,129,0.06),transparent)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             <div className="relative z-10">
-              <span className="text-xs font-bold text-brand-mint tracking-widest uppercase block mb-1">Nutrition Strategy</span>
+              <span className="text-xs font-bold text-brand-accent tracking-widest uppercase block mb-1">Nutrition Strategy</span>
               <h2 className="text-2xl font-extrabold text-white">Indian Diet Plan</h2>
               <span className="text-xs text-dark-muted mt-0.5 block">Macro Split: {diet_macros_target.carbs}g Carbs | {diet_macros_target.fat}g Fat</span>
             </div>
@@ -350,15 +279,15 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
                   <button
                     key={day}
                     onClick={() => setActiveDietDay(day)}
-                    className={`px-3 py-2 text-[10px] font-bold rounded-lg transition-all border whitespace-nowrap flex-shrink-0 relative ${
+                    className={`px-3.5 py-2 text-xs font-extrabold rounded-xl transition-all border whitespace-nowrap flex-shrink-0 relative ${
                       isSelected 
-                        ? 'bg-brand-mint text-dark border-brand-mint shadow-md shadow-brand-mint/20 hover:scale-105 active:scale-95' 
-                        : 'bg-[#121829]/60 text-dark-muted border-white/5 hover:border-brand-mint/40 hover:text-slate-200'
+                        ? 'bg-gold text-black border-gold shadow-lg shadow-gold/30 scale-105' 
+                        : 'bg-dark-card text-slate-300 border-white/10 hover:border-gold/40 hover:text-gold'
                     }`}
                   >
                     {day.substring(0, 3)}
                     {isSunday && (
-                      <span className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${isSelected ? 'bg-brand-coral' : 'bg-brand-gold'} animate-pulse`}></span>
+                      <span className={`absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-red-500' : 'bg-gold'} animate-pulse`}></span>
                     )}
                   </button>
                 );
@@ -367,7 +296,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
 
             <div className="space-y-4 divide-y divide-white/5 relative z-10">
               {activeDietDay === "Sunday" && (
-                <div className="bg-brand-gold/10 border border-brand-gold/20 rounded-xl p-3 text-[10px] text-brand-gold font-medium leading-relaxed futuristic-glow-gold">
+                <div className="bg-gold/10 border border-gold/30 rounded-xl p-3 text-xs text-gold font-medium leading-relaxed futuristic-glow-gold">
                   <span className="font-extrabold uppercase block mb-0.5">⚠️ Controlled Cheat Day</span>
                   Sundays are set up as low-stress, controlled recovery days. Enjoy localized favorite meals in portion-controlled sizes.
                 </div>
@@ -376,13 +305,13 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
               {Object.keys(currentDayMeals).map((mealKey) => (
                 <div key={mealKey} className="pt-4 first:pt-0 pb-4 border-b border-white/5 last:border-none">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-1.5 h-3.5 bg-brand-mint rounded-full"></div>
-                    <h4 className="font-bold text-sm text-brand-mint capitalize">{mealKey}</h4>
+                    <div className="w-1.5 h-3.5 bg-red-500 rounded-full"></div>
+                    <h4 className="font-bold text-sm text-red-500 capitalize">{mealKey}</h4>
                   </div>
                   <ul className="space-y-2 pl-3 text-xs text-slate-300">
                     {currentDayMeals[mealKey].map((food, idx) => (
                       <li key={idx} className="flex items-start gap-2 leading-relaxed transition-all hover:translate-x-1 duration-200">
-                        <span className="text-brand-mint font-bold mt-0.5">•</span>
+                        <span className="text-red-500 font-bold mt-0.5">•</span>
                         <span>{food}</span>
                       </li>
                     ))}
@@ -416,7 +345,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
                   step="0.5"
                   value={sleepInput}
                   onChange={(e) => setSleepInput(e.target.value)}
-                  className="w-full px-4 py-3 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                  className="w-full px-4 py-3 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                 />
               </div>
 
@@ -424,7 +353,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
               <div>
                 <div className="flex justify-between items-baseline mb-1">
                   <label className="text-xs font-bold text-slate-300">2. Muscle Soreness Level</label>
-                  <span className="text-xs font-bold text-brand-coral">{sorenessInput} / 10</span>
+                  <span className="text-xs font-bold text-brand-secondary">{sorenessInput} / 10</span>
                 </div>
                 <input 
                   type="range" 
@@ -432,7 +361,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
                   max="10"
                   value={sorenessInput}
                   onChange={(e) => setSorenessInput(e.target.value)}
-                  className="w-full h-1.5 bg-dark-border rounded-lg appearance-none cursor-pointer accent-brand-purple"
+                  className="w-full h-1.5 bg-dark-border rounded-lg appearance-none cursor-pointer accent-brand-primary"
                 />
                 <div className="flex justify-between text-[9px] text-dark-muted mt-1 font-semibold uppercase">
                   <span>No soreness</span>
@@ -444,7 +373,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
               <div>
                 <div className="flex justify-between items-baseline mb-1">
                   <label className="text-xs font-bold text-slate-300">3. Energy / Focus Level</label>
-                  <span className="text-xs font-bold text-brand-mint">{energyInput} / 10</span>
+                  <span className="text-xs font-bold text-brand-accent">{energyInput} / 10</span>
                 </div>
                 <input 
                   type="range" 
@@ -452,7 +381,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
                   max="10"
                   value={energyInput}
                   onChange={(e) => setEnergyInput(e.target.value)}
-                  className="w-full h-1.5 bg-dark-border rounded-lg appearance-none cursor-pointer accent-brand-purple"
+                  className="w-full h-1.5 bg-dark-border rounded-lg appearance-none cursor-pointer accent-brand-primary"
                 />
                 <div className="flex justify-between text-[9px] text-dark-muted mt-1 font-semibold uppercase">
                   <span>Exhausted</span>
@@ -462,14 +391,14 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
 
               {/* Readiness Output Summary */}
               {readinessResult && (
-                <div className="bg-brand-purple/10 border border-brand-purple/20 p-4 rounded-2xl space-y-2 mt-4">
+                <div className="bg-brand-primary/10 border border-brand-primary/20 p-4 rounded-2xl space-y-2 mt-4">
                   <div className="flex justify-between items-baseline">
                     <span className="text-xs font-bold text-dark-muted uppercase">Readiness Score</span>
-                    <span className="text-xl font-black text-brand-purple">{readinessResult.score}%</span>
+                    <span className="text-xl font-black text-brand-primary">{readinessResult.score}%</span>
                   </div>
                   <div className="flex justify-between items-baseline">
                     <span className="text-xs font-bold text-dark-muted uppercase">Recommendation</span>
-                    <span className="text-xs font-bold text-brand-mint">{readinessResult.action}</span>
+                    <span className="text-xs font-bold text-brand-accent">{readinessResult.action}</span>
                   </div>
                   <p className="text-xs text-slate-300 mt-2 leading-relaxed">{readinessResult.advice}</p>
                 </div>
@@ -489,7 +418,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
                 <button 
                   onClick={handleReadinessCheck}
                   disabled={calculatingReadiness}
-                  className="w-2/3 py-3.5 bg-brand-purple hover:bg-brand-purple/90 active:scale-95 transition-all text-white font-bold rounded-xl text-xs flex items-center justify-center shadow-lg shadow-brand-purple/20"
+                  className="w-2/3 py-3.5 bg-brand-primary hover:bg-brand-primary/90 active:scale-95 transition-all text-white font-bold rounded-xl text-xs flex items-center justify-center shadow-lg shadow-brand-primary/20"
                 >
                   {calculatingReadiness ? 'Analyzing readiness...' : 'Compute Score'}
                 </button>
@@ -512,8 +441,8 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
                   A track of all posture-analyzed sessions logged today
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 border border-brand-gold/20 flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-brand-gold" />
+              <div className="w-10 h-10 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-brand-primary" />
               </div>
             </div>
 
@@ -528,7 +457,7 @@ export default function Dashboard({ userId, userName, setView, onStartWorkout, d
                       {w.sets} sets × {w.reps} reps • {w.duration ? Number(w.duration).toFixed(1) : '0.0'} min
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-brand-mint bg-brand-mint/10 px-2 py-1 rounded-lg border border-brand-mint/15">
+                  <span className="text-xs font-bold text-brand-accent bg-brand-accent/10 px-2 py-1 rounded-lg border border-brand-accent/15">
                     {Math.round(w.accuracy)}% Acc
                   </span>
                 </div>

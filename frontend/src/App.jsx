@@ -35,12 +35,12 @@ function LocalWorkoutView({ userId, selectedExercise, setView }) {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-4 bg-dark relative overflow-hidden select-none">
-      <div className="absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-purple/10 blur-[120px]"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-mint/10 blur-[120px]"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-primary/10 blur-[120px]"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-accent/10 blur-[120px]"></div>
 
       <div className="w-full max-w-md glass p-8 rounded-3xl animate-fade-in-up shadow-2xl relative border border-white/5 z-10 text-center space-y-6">
-        <div className="w-14 h-14 bg-brand-purple/10 rounded-2xl flex items-center justify-center border border-brand-purple/20 mb-2 mx-auto animate-pulse">
-          <Dumbbell className="w-6 h-6 text-brand-purple" />
+        <div className="w-14 h-14 bg-brand-primary/10 rounded-2xl flex items-center justify-center border border-brand-primary/20 mb-2 mx-auto animate-pulse">
+          <Dumbbell className="w-6 h-6 text-brand-primary" />
         </div>
         
         {status === 'launching' && (
@@ -54,14 +54,14 @@ function LocalWorkoutView({ userId, selectedExercise, setView }) {
 
         {status === 'active' && (
           <>
-            <h2 className="text-xl font-bold text-brand-mint">Local Workout Active</h2>
+            <h2 className="text-xl font-bold text-brand-accent">Local Workout Active</h2>
             <p className="text-sm font-semibold text-white capitalize mt-1">
               Tracking: {selectedExercise ? selectedExercise.name : ''}
             </p>
             <p className="text-xs text-dark-muted leading-relaxed font-semibold mt-3">
               The external posture analysis window is currently running on your desktop. Perform your exercises in front of the camera.
             </p>
-            <div className="bg-brand-purple/5 border border-brand-purple/15 rounded-2xl p-4 text-[10px] text-brand-purple text-left leading-relaxed space-y-1">
+            <div className="bg-brand-primary/5 border border-brand-primary/15 rounded-2xl p-4 text-[10px] text-brand-primary text-left leading-relaxed space-y-1">
               <p>💡 <b>Form Feedback:</b> Look at the OpenCV window for real-time rep counts and safety indicators.</p>
               <p>⏱️ <b>How to finish:</b> Press <b>ESC</b> (to close window) or <b>M</b> (to change exercise) in the tracking window. Your sets, reps, and accuracy will sync immediately to this dashboard.</p>
             </div>
@@ -70,13 +70,13 @@ function LocalWorkoutView({ userId, selectedExercise, setView }) {
 
         {status === 'error' && (
           <>
-            <h2 className="text-xl font-bold text-brand-coral">Failed to Launch</h2>
-            <p className="text-xs text-brand-coral/95 bg-brand-coral/5 border border-brand-coral/20 rounded-xl p-3">
+            <h2 className="text-xl font-bold text-brand-secondary">Failed to Launch</h2>
+            <p className="text-xs text-brand-secondary/95 bg-brand-secondary/5 border border-brand-secondary/20 rounded-xl p-3">
               {error}
             </p>
             <button 
               onClick={launchLocal}
-              className="w-full py-2.5 bg-brand-purple hover:bg-brand-purple/90 transition-colors font-bold text-xs rounded-xl"
+              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 transition-colors font-bold text-xs rounded-xl"
             >
               Retry Connection
             </button>
@@ -107,48 +107,18 @@ export default function App() {
   const [showWorkoutsModal, setShowWorkoutsModal] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const getDefaultDashboard = (name = 'Athlete') => ({
-    user_name: name || 'Athlete',
-    fitness_goal: userGoal || 'Muscle Gain',
-    streak: 1,
-    bmi: 24.2,
-    body_fat: 18.5,
-    sleep_rec: 8.0,
-    goal_weight: 75.0,
-    weeks_to_goal: 12,
-    today_split: "Upper Body Strength",
-    today_exercises: [
-      { name: "barbell_bench_press", sets: 4, reps: 10, rest: "90s" },
-      { name: "incline_dumbbell_press", sets: 3, reps: 12, rest: "60s" },
-      { name: "overhead_press", sets: 4, reps: 10, rest: "90s" },
-      { name: "bicep_curl", sets: 3, reps: 12, rest: "60s" }
-    ],
-    intake_today: { calories: 450, protein: 35, water: 1.5 },
-    readiness: { score: 85, state: "Optimal Training Window" }
-  });
-
   const fetchDashboardData = async (uid) => {
     const targetUserId = uid || userId;
-    if (!targetUserId) {
-      setDashboardData(getDefaultDashboard(userName));
-      return;
-    }
+    if (!targetUserId) return;
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 sec timeout
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/dashboard/${targetUserId}`, {
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/dashboard/${targetUserId}`);
       if (res.ok) {
         const json = await res.json();
         setDashboardData(json);
-        return;
       }
     } catch (e) {
-      console.warn("Dashboard server response delayed, using fallback state:", e);
+      console.error("Sidebar fetch failed", e);
     }
-    setDashboardData(prev => prev || getDefaultDashboard(userName));
   };
 
   const handleQuickLogSidebar = async (type, amount) => {
@@ -192,6 +162,8 @@ export default function App() {
     }
   }, [userId, view]);
 
+  const [userAvatar, setUserAvatar] = useState(() => localStorage.getItem('gym_user_avatar') || '');
+
   useEffect(() => {
     // Check if user has already onboarded
     const storedId = localStorage.getItem('gym_user_id');
@@ -206,6 +178,12 @@ export default function App() {
     } else {
       setView('onboarding');
     }
+
+    const handleAvatarChange = () => {
+      setUserAvatar(localStorage.getItem('gym_user_avatar') || '');
+    };
+    window.addEventListener('avatarUpdated', handleAvatarChange);
+    return () => window.removeEventListener('avatarUpdated', handleAvatarChange);
   }, []);
 
   const handleFinishOnboarding = (id, name) => {
@@ -220,6 +198,8 @@ export default function App() {
     localStorage.removeItem('gym_user_id');
     localStorage.removeItem('gym_user_name');
     localStorage.removeItem('gym_user_goal');
+    localStorage.removeItem('gym_user_avatar');
+    setUserAvatar('');
     setUserId(null);
     setUserName('');
     setUserGoal('Muscle Gain');
@@ -239,18 +219,18 @@ export default function App() {
     ];
 
     return (
-      <div className={`w-64 bg-[#080B11] border-r border-white/5 flex flex-col h-screen sticky top-0 flex-shrink-0 select-none z-30 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full absolute md:relative md:w-0 overflow-hidden border-none'}`}>
+      <div className={`w-64 bg-[#08080E] border-r border-gold/15 flex flex-col h-screen sticky top-0 flex-shrink-0 select-none z-30 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full absolute md:relative md:w-0 overflow-hidden border-none'}`}>
         {/* Branding header */}
         <div className="p-6 border-b border-white/5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-purple/10 border border-brand-purple/20 flex items-center justify-center text-brand-purple">
-              <Activity className="w-5 h-5 animate-pulse" />
+            <div className="w-10 h-10 rounded-xl bg-gold/10 border border-gold/25 flex items-center justify-center text-gold shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <Activity className="w-5 h-5 animate-pulse text-gold" />
             </div>
-            <span className="font-extrabold tracking-tight text-white text-lg">AI Gym Trainer</span>
+            <span className="font-extrabold tracking-tight neon-gradient-text text-lg">AI Gym Trainer</span>
           </div>
           <button 
             onClick={() => setIsSidebarOpen(false)}
-            className="w-8 h-8 rounded-lg bg-dark-border/40 hover:bg-dark-border/60 flex items-center justify-center text-dark-muted hover:text-white transition-colors"
+            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-gold/15 flex items-center justify-center text-dark-muted hover:text-gold transition-colors"
             title="Collapse Sidebar"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -258,13 +238,21 @@ export default function App() {
         </div>
 
         {/* User Card */}
-        <div className="p-4 mx-4 my-6 bg-dark-border/20 border border-white/5 rounded-2xl flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-mint flex items-center justify-center font-bold text-sm text-white uppercase flex-shrink-0">
-            {userName ? userName.substring(0, 2) : 'AI'}
+        <div 
+          onClick={() => setView('profile')}
+          className="p-4 mx-4 my-6 bg-dark-card border border-gold/15 hover:border-red-500/40 rounded-2xl flex items-center gap-3 shadow-lg shadow-black/60 cursor-pointer group transition-all"
+          title="View & Edit Profile"
+        >
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-red-500 flex items-center justify-center font-black text-sm text-black uppercase flex-shrink-0 shadow-md shadow-gold/20 overflow-hidden relative">
+            {userAvatar ? (
+              <img src={userAvatar} alt="Profile" className="w-full h-full object-cover rounded-xl" />
+            ) : (
+              userName ? userName.substring(0, 2) : 'AI'
+            )}
           </div>
-          <div className="min-w-0">
-            <span className="font-extrabold text-white text-sm block truncate">{userName || 'User'}</span>
-            <span className="text-[10px] font-black text-brand-mint tracking-wider block mt-0.5 uppercase truncate">{userGoal}</span>
+          <div className="min-w-0 flex-1">
+            <span className="font-extrabold text-white text-sm block truncate group-hover:text-gold transition-colors">{userName || 'User'}</span>
+            <span className="text-[10px] font-black text-red-500 tracking-wider block mt-0.5 uppercase truncate">{userGoal}</span>
           </div>
         </div>
 
@@ -279,11 +267,11 @@ export default function App() {
                 onClick={() => setView(item.id)}
                 className={`w-full px-4 py-3.5 rounded-xl text-left text-sm font-semibold transition-all flex items-center gap-3 ${
                   isActive 
-                    ? 'bg-brand-purple/10 text-brand-purple border border-brand-purple/20 shadow-md shadow-brand-purple/5' 
-                    : 'text-dark-muted border border-transparent hover:text-slate-200 hover:bg-dark-border/10'
+                    ? 'bg-gold/15 text-gold border border-gold/40 shadow-lg shadow-gold/10 font-bold' 
+                    : 'text-dark-muted border border-transparent hover:text-white hover:bg-white/5 hover:border-white/10'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-brand-purple' : 'text-dark-muted'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-gold' : 'text-dark-muted'}`} />
                 {item.label}
               </button>
             );
@@ -293,12 +281,10 @@ export default function App() {
           {dashboardData && (
             <div className="mt-6 pt-4 border-t border-white/5 space-y-3 pb-4">
               <span className="text-[10px] font-bold text-dark-muted tracking-widest uppercase block mb-1">Daily Progress</span>
-              
-
 
               {/* Consistency Tracker (Futuristic Circular Progress Ring) */}
-              <div className="bg-dark-border/10 border border-white/5 rounded-2xl p-4 flex items-center gap-4 hover:border-brand-gold/30 hover:bg-dark-border/20 transition-all duration-300 futuristic-glow-gold relative overflow-hidden group">
-                <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(245,158,11,0.04),transparent)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+              <div className="bg-dark-card border border-gold/20 rounded-2xl p-4 flex items-center gap-4 hover:border-gold/50 transition-all duration-300 futuristic-glow-gold relative overflow-hidden group">
+                <div className="absolute -inset-full bg-[radial-gradient(circle,rgba(245,158,11,0.06),transparent)] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
                 {/* SVG Progress Ring */}
                 <div className="relative w-12 h-12 flex-shrink-0 flex items-center justify-center">
                   <svg className="absolute inset-0 w-full h-full transform -rotate-90">
@@ -313,15 +299,15 @@ export default function App() {
                       cx="24"
                       cy="24"
                       r="19"
-                      className="stroke-brand-gold fill-transparent progress-ring-circle"
+                      className="stroke-gold fill-transparent progress-ring-circle"
                       strokeWidth="3"
                       strokeDasharray={2 * Math.PI * 19}
                       strokeDashoffset={2 * Math.PI * 19 - (dashboardData.workout_completion / 100) * (2 * Math.PI * 19)}
                       strokeLinecap="round"
-                      style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.45))' }}
+                      style={{ filter: 'drop-shadow(0 0 6px rgba(245, 158, 11, 0.6))' }}
                     />
                   </svg>
-                  <Trophy className="w-4 h-4 text-brand-gold relative z-10 animate-pulse" />
+                  <Trophy className="w-4 h-4 text-gold relative z-10 animate-pulse" />
                 </div>
                 
                 {/* Text and Actions */}
@@ -331,14 +317,14 @@ export default function App() {
                     {dashboardData.completed_today && dashboardData.completed_today.length > 0 && (
                       <button 
                         onClick={() => setShowWorkoutsModal(true)}
-                        className="px-1.5 py-0.5 bg-brand-gold/20 hover:bg-brand-gold/30 border border-brand-gold/30 hover:scale-105 active:scale-95 transition-all text-brand-gold text-[8px] font-bold tracking-widest uppercase rounded-md"
+                        className="px-1.5 py-0.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 hover:scale-105 active:scale-95 transition-all text-red-500 text-[8px] font-bold tracking-widest uppercase rounded-md"
                       >
                         View
                       </button>
                     )}
                   </div>
                   <span className="text-sm font-black text-white block mt-1">{dashboardData.workout_streak} <span className="text-[10px] text-dark-muted font-bold">Days</span></span>
-                  <span className="text-[9px] font-bold text-brand-gold block mt-0.5">{dashboardData.workout_completion}% Completed</span>
+                  <span className="text-[9px] font-bold text-gold block mt-0.5">{dashboardData.workout_completion}% Completed</span>
                 </div>
               </div>
             </div>
@@ -349,9 +335,9 @@ export default function App() {
         <div className="p-4 border-t border-white/5">
           <button
             onClick={handleLogout}
-            className="w-full px-4 py-3.5 rounded-xl text-left text-sm font-semibold text-brand-coral hover:bg-brand-coral/5 transition-all flex items-center gap-3"
+            className="w-full px-4 py-3.5 rounded-xl text-left text-sm font-semibold text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-3 border border-transparent hover:border-red-500/20"
           >
-            <LogOut className="w-4 h-4 text-brand-coral" />
+            <LogOut className="w-4 h-4 text-red-500" />
             Logout
           </button>
         </div>
@@ -363,7 +349,7 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark text-white">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-brand-purple border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="w-12 h-12 border-4 border-gold border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-sm font-semibold tracking-wider text-dark-muted">SYNCHRONIZING APP STATE...</p>
         </div>
       </div>
@@ -379,7 +365,7 @@ export default function App() {
         {showSidebar && !isSidebarOpen && (
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="absolute top-8 left-8 z-40 w-10 h-10 rounded-xl bg-[#080B11] border border-white/10 flex items-center justify-center text-dark-muted hover:text-white hover:border-brand-purple/40 shadow-lg shadow-black/40 transition-all duration-200 hover:scale-105 active:scale-95 animate-fade-in"
+            className="absolute top-8 left-8 z-40 w-10 h-10 rounded-xl bg-[#080B11] border border-white/10 flex items-center justify-center text-dark-muted hover:text-white hover:border-brand-primary/40 shadow-lg shadow-black/40 transition-all duration-200 hover:scale-105 active:scale-95 animate-fade-in"
             title="Expand Sidebar"
           >
             <Menu className="w-5 h-5" />
@@ -467,8 +453,8 @@ export default function App() {
                   A track of all posture-analyzed sessions logged today
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-2xl bg-brand-gold/10 border border-brand-gold/20 flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-brand-gold" />
+              <div className="w-10 h-10 rounded-2xl bg-brand-primary/10 border border-brand-primary/20 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-brand-primary" />
               </div>
             </div>
 
@@ -483,7 +469,7 @@ export default function App() {
                       {w.sets} sets × {w.reps} reps • {w.duration ? Number(w.duration).toFixed(1) : '0.0'} min
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-brand-mint bg-brand-mint/10 px-2 py-1 rounded-lg border border-brand-mint/15">
+                  <span className="text-xs font-bold text-brand-accent bg-brand-accent/10 px-2 py-1 rounded-lg border border-brand-accent/15">
                     {Math.round(w.accuracy)}% Acc
                   </span>
                 </div>

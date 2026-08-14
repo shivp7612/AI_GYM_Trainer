@@ -164,19 +164,19 @@ export default function Onboarding({ onFinish }) {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center px-4 bg-dark relative overflow-hidden select-none">
       {/* Background Orbs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-purple/10 blur-[120px]"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-mint/10 blur-[120px]"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] rounded-full bg-gold/10 blur-[120px]"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-magenta/10 blur-[120px]"></div>
 
       {/* Main card */}
-      <div className="w-full max-w-md glass p-8 rounded-3xl animate-fade-in-up shadow-2xl relative border border-white/5 z-10">
+      <div className="w-full max-w-md futuristic-card p-8 rounded-3xl animate-fade-in-up shadow-2xl relative border border-gold/20 z-10">
         
         {/* Progress header */}
         {step > 1 && (
           <div className="mb-8 flex items-center justify-between">
-            <span className="text-xs font-semibold text-brand-purple tracking-widest uppercase">Step {step - 1} of 4</span>
-            <div className="w-2/3 h-1.5 bg-dark-border rounded-full overflow-hidden">
+            <span className="text-xs font-bold text-gold tracking-widest uppercase">Step {step - 1} of 4</span>
+            <div className="w-2/3 h-1.5 bg-dark-card rounded-full overflow-hidden border border-white/5">
               <div 
-                className="h-full bg-gradient-to-r from-brand-purple to-brand-mint transition-all duration-300"
+                className="h-full bg-gradient-to-r from-gold to-magenta transition-all duration-300"
                 style={{ width: `${((step - 1) / 4) * 100}%` }}
               ></div>
             </div>
@@ -186,23 +186,23 @@ export default function Onboarding({ onFinish }) {
         {/* --- SCREEN 1: WELCOME --- */}
         {step === 1 && !isLoggingIn && (
           <div className="text-center flex flex-col items-center py-6">
-            <div className="w-20 h-20 bg-brand-purple/10 rounded-2xl flex items-center justify-center border border-brand-purple/20 mb-6 animate-bounce">
-              <Award className="w-10 h-10 text-brand-purple" />
+            <div className="w-20 h-20 bg-gold/15 rounded-2xl flex items-center justify-center border border-gold/30 mb-6 animate-bounce shadow-lg shadow-gold/20">
+              <Award className="w-10 h-10 text-gold" />
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight mb-2 uppercase bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-extrabold tracking-tight mb-2 uppercase neon-gradient-text">
               AI Fitness Coach
             </h1>
             <p className="text-dark-muted font-medium text-sm tracking-wide max-w-[280px] mb-8">
               Transform Your Fitness with Precision Real-Time AI Posture Analytics
             </p>
-            {error && <p className="w-full mb-4 text-brand-coral text-xs font-semibold bg-brand-coral/10 p-3 rounded-lg border border-brand-coral/20">{error}</p>}
+            {error && <p className="w-full mb-4 text-magenta text-xs font-bold bg-magenta/10 p-3 rounded-lg border border-magenta/25">{error}</p>}
             <div className="w-full space-y-3.5">
               <button
                 onClick={() => {
                   setIsLoggingIn(true);
                   setError('');
                 }}
-                className="w-full py-4 bg-brand-purple hover:bg-brand-purple/90 active:scale-95 transition-all text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-brand-purple/30"
+                className="w-full py-4 neon-btn-gold text-black font-bold rounded-2xl flex items-center justify-center gap-2"
               >
                 Log In
               </button>
@@ -211,7 +211,7 @@ export default function Onboarding({ onFinish }) {
                   setStep(2);
                   setError('');
                 }}
-                className="w-full py-4 bg-dark-border/40 hover:bg-dark-border/60 active:scale-95 transition-all text-slate-200 border border-white/5 font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg"
+                className="w-full py-4 neon-btn-magenta text-white font-bold rounded-2xl flex items-center justify-center gap-2"
               >
                 Sign Up
               </button>
@@ -223,10 +223,10 @@ export default function Onboarding({ onFinish }) {
         {isLoggingIn && (
           <div className="space-y-5">
             <div className="flex items-center gap-2 mb-2">
-              <User className="w-5 h-5 text-brand-purple" />
+              <User className="w-5 h-5 text-brand-primary" />
               <h2 className="text-xl font-bold">Log In to Coach</h2>
             </div>
-            {error && <p className="text-brand-coral text-xs font-semibold bg-brand-coral/10 p-3 rounded-lg border border-brand-coral/20">{error}</p>}
+            {error && <p className="text-brand-secondary text-xs font-semibold bg-brand-secondary/10 p-3 rounded-lg border border-brand-secondary/20">{error}</p>}
             
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
@@ -236,7 +236,7 @@ export default function Onboarding({ onFinish }) {
                   placeholder="Enter email or phone number"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                  className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                 />
               </div>
 
@@ -248,7 +248,7 @@ export default function Onboarding({ onFinish }) {
                     placeholder="••••••••"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full pl-4 pr-12 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                    className="w-full pl-4 pr-12 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                   />
                   <button
                     type="button"
@@ -274,7 +274,7 @@ export default function Onboarding({ onFinish }) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-2/3 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center shadow-lg"
+                  className="w-2/3 py-4 bg-brand-primary hover:bg-brand-primary/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center shadow-lg"
                 >
                   {loading ? 'Logging In...' : 'Log In'}
                 </button>
@@ -287,10 +287,10 @@ export default function Onboarding({ onFinish }) {
         {step === 2 && (
           <div className="space-y-5">
             <div className="flex items-center gap-2 mb-2">
-              <User className="w-5 h-5 text-brand-purple" />
+              <User className="w-5 h-5 text-brand-primary" />
               <h2 className="text-xl font-bold">Personal Information</h2>
             </div>
-            {error && <p className="text-brand-coral text-xs font-semibold bg-brand-coral/10 p-3 rounded-lg border border-brand-coral/20">{error}</p>}
+            {error && <p className="text-brand-secondary text-xs font-semibold bg-brand-secondary/10 p-3 rounded-lg border border-brand-secondary/20">{error}</p>}
             
             <div className="space-y-4">
               <div>
@@ -300,7 +300,7 @@ export default function Onboarding({ onFinish }) {
                   placeholder="Enter your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                  className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                 />
               </div>
 
@@ -312,7 +312,7 @@ export default function Onboarding({ onFinish }) {
                     placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                   />
                 </div>
                 <div>
@@ -322,7 +322,7 @@ export default function Onboarding({ onFinish }) {
                     placeholder="Phone number"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                   />
                 </div>
               </div>
@@ -335,7 +335,7 @@ export default function Onboarding({ onFinish }) {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-4 pr-12 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                    className="w-full pl-4 pr-12 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                   />
                   <button
                     type="button"
@@ -355,7 +355,7 @@ export default function Onboarding({ onFinish }) {
                     placeholder="22"
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                   />
                 </div>
                 <div>
@@ -379,7 +379,7 @@ export default function Onboarding({ onFinish }) {
                     placeholder="175"
                     value={height}
                     onChange={(e) => setHeight(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                   />
                 </div>
                 <div>
@@ -389,7 +389,7 @@ export default function Onboarding({ onFinish }) {
                     placeholder="70"
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
-                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-purple/40 text-white font-medium text-sm transition-all"
+                    className="w-full px-4 py-3.5 bg-dark-border/40 focus:bg-dark-border/60 outline-none rounded-xl border border-white/5 focus:border-brand-primary/40 text-white font-medium text-sm transition-all"
                   />
                 </div>
               </div>
@@ -397,7 +397,7 @@ export default function Onboarding({ onFinish }) {
 
             <button
               onClick={nextStep}
-              className="w-full mt-6 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
+              className="w-full mt-6 py-4 bg-brand-primary hover:bg-brand-primary/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-primary/20"
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>
@@ -408,7 +408,7 @@ export default function Onboarding({ onFinish }) {
         {step === 3 && (
           <div>
             <div className="flex items-center gap-2 mb-6">
-              <Target className="w-5 h-5 text-brand-purple" />
+              <Target className="w-5 h-5 text-brand-primary" />
               <h2 className="text-xl font-bold">Fitness Goal & Diet</h2>
             </div>
             
@@ -419,13 +419,13 @@ export default function Onboarding({ onFinish }) {
                   onClick={() => setGoal(g)}
                   className={`px-5 py-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
                     goal === g 
-                      ? 'border-brand-purple bg-brand-purple/10 text-white font-semibold' 
+                      ? 'border-brand-primary bg-brand-primary/10 text-white font-semibold' 
                       : 'border-white/5 bg-dark-border/20 text-dark-muted hover:border-white/10 hover:text-white'
                   }`}
                 >
                   <span>{g}</span>
-                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${goal === g ? 'border-brand-purple' : 'border-dark-border'}`}>
-                    {goal === g && <div className="w-2.5 h-2.5 bg-brand-purple rounded-full"></div>}
+                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${goal === g ? 'border-brand-primary' : 'border-dark-border'}`}>
+                    {goal === g && <div className="w-2.5 h-2.5 bg-brand-primary rounded-full"></div>}
                   </div>
                 </div>
               ))}
@@ -441,7 +441,7 @@ export default function Onboarding({ onFinish }) {
                     onClick={() => setDietPref(pref)}
                     className={`py-3.5 rounded-xl border text-center font-bold text-sm transition-all ${
                       dietPref === pref 
-                        ? 'bg-brand-mint/10 border-brand-mint text-brand-mint' 
+                        ? 'bg-brand-accent/10 border-brand-accent text-brand-accent' 
                         : 'bg-dark-border/20 border-white/5 text-dark-muted hover:border-white/10 hover:text-slate-200'
                     }`}
                   >
@@ -463,7 +463,7 @@ export default function Onboarding({ onFinish }) {
               </button>
               <button
                 onClick={nextStep}
-                className="w-2/3 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
+                className="w-2/3 py-4 bg-brand-primary hover:bg-brand-primary/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-primary/20"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>
@@ -475,7 +475,7 @@ export default function Onboarding({ onFinish }) {
         {step === 4 && (
           <div className="space-y-5">
             <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-5 h-5 text-brand-purple" />
+              <Calendar className="w-5 h-5 text-brand-primary" />
               <h2 className="text-xl font-bold">Workout Availability</h2>
             </div>
 
@@ -489,7 +489,7 @@ export default function Onboarding({ onFinish }) {
                     onClick={() => setWorkoutDays(day)}
                     className={`py-3 rounded-xl border text-center font-bold text-sm transition-all ${
                       workoutDays === day 
-                        ? 'bg-brand-purple border-brand-purple text-white shadow-md shadow-brand-purple/20' 
+                        ? 'bg-brand-primary border-brand-primary text-white shadow-md shadow-brand-primary/20' 
                         : 'bg-dark-border/20 border-white/5 text-dark-muted hover:border-white/10'
                     }`}
                   >
@@ -511,7 +511,7 @@ export default function Onboarding({ onFinish }) {
               </button>
               <button
                 onClick={nextStep}
-                className="w-2/3 py-4 bg-brand-purple hover:bg-brand-purple/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-purple/20"
+                className="w-2/3 py-4 bg-brand-primary hover:bg-brand-primary/90 transition-colors text-white font-semibold rounded-2xl flex items-center justify-center gap-1 shadow-lg shadow-brand-primary/20"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>
@@ -523,10 +523,10 @@ export default function Onboarding({ onFinish }) {
         {step === 5 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2">
-              <Heart className="w-5 h-5 text-brand-purple" />
+              <Heart className="w-5 h-5 text-brand-primary" />
               <h2 className="text-xl font-bold">Health & Injuries</h2>
             </div>
-            {error && <p className="text-brand-coral text-xs font-semibold bg-brand-coral/10 p-3 rounded-lg border border-brand-coral/20">{error}</p>}
+            {error && <p className="text-brand-secondary text-xs font-semibold bg-brand-secondary/10 p-3 rounded-lg border border-brand-secondary/20">{error}</p>}
 
             <div>
               <p className="text-xs text-dark-muted mb-4 font-medium leading-relaxed">
@@ -542,13 +542,13 @@ export default function Onboarding({ onFinish }) {
                       onClick={() => toggleInjury(injury)}
                       className={`px-5 py-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
                         active 
-                          ? 'border-brand-coral bg-brand-coral/5 text-brand-coral font-semibold' 
+                          ? 'border-brand-secondary bg-brand-secondary/5 text-brand-secondary font-semibold' 
                           : 'border-white/5 bg-dark-border/20 text-dark-muted hover:border-white/10 hover:text-white'
                       }`}
                     >
                       <span>{injury} Injury</span>
-                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center ${active ? 'border-brand-coral bg-brand-coral/10' : 'border-dark-border'}`}>
-                        {active && <span className="text-brand-coral text-xs">✓</span>}
+                      <div className={`w-5 h-5 rounded-md border flex items-center justify-center ${active ? 'border-brand-secondary bg-brand-secondary/10' : 'border-dark-border'}`}>
+                        {active && <span className="text-brand-secondary text-xs">✓</span>}
                       </div>
                     </div>
                   );
@@ -566,7 +566,7 @@ export default function Onboarding({ onFinish }) {
               <button
                 onClick={handleFinish}
                 disabled={loading}
-                className="w-2/3 py-4 bg-gradient-to-r from-brand-purple to-brand-mint hover:opacity-95 transition-opacity text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg"
+                className="w-2/3 py-4 bg-gradient-to-r from-brand-primary to-brand-accent hover:opacity-95 transition-opacity text-white font-semibold rounded-2xl flex items-center justify-center gap-2 shadow-lg"
               >
                 {loading ? 'Generating AI Plan...' : 'Finish Setup'}
               </button>

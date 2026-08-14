@@ -108,7 +108,7 @@ export default function ProgressPhotos({ userId, setView }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark text-white">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-brand-purple border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="text-sm font-semibold tracking-wider text-dark-muted">LOADING PROGRESS PHOTO GALLERY...</p>
         </div>
       </div>
@@ -117,8 +117,8 @@ export default function ProgressPhotos({ userId, setView }) {
 
   return (
     <div className="min-h-screen bg-dark text-white pb-16 px-4 md:px-8 relative overflow-hidden select-none">
-      <div className="absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-purple/5 blur-[120px]"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-mint/5 blur-[120px]"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-primary/5 blur-[120px]"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] rounded-full bg-brand-accent/5 blur-[120px]"></div>
 
       <div className="max-w-5xl mx-auto pt-8 space-y-8 relative z-10 animate-fade-in-up">
         
@@ -142,15 +142,15 @@ export default function ProgressPhotos({ userId, setView }) {
               onClick={() => setShowGrid(!showGrid)}
               className={`px-4 py-2.5 rounded-xl border font-bold text-xs flex items-center gap-1.5 transition-all ${
                 showGrid 
-                  ? 'bg-brand-mint/10 border-brand-mint/20 text-brand-mint' 
-                  : 'bg-dark-border/40 border-white/5 text-dark-muted'
+                  ? 'bg-red-500/15 border-red-500/30 text-red-500' 
+                  : 'bg-dark-card border-white/5 text-dark-muted'
               }`}
             >
               <Grid className="w-4 h-4" />
               Toggle Alignment Grid
             </button>
 
-            <label className="px-5 py-2.5 bg-brand-purple hover:bg-brand-purple/90 active:scale-95 transition-all text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-lg shadow-brand-purple/20">
+            <label className="px-5 py-2.5 neon-btn-gold text-black font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-lg active:scale-95">
               <Upload className="w-4 h-4" />
               {uploading ? 'Uploading...' : 'Upload Photo'}
               <input 
@@ -168,9 +168,9 @@ export default function ProgressPhotos({ userId, setView }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           
           {/* Photo A Box */}
-          <div className="glass p-6 rounded-3xl border border-white/5 space-y-4 flex flex-col items-center">
+          <div className="futuristic-card p-6 rounded-3xl border border-gold/20 space-y-4 flex flex-col items-center">
             <div className="flex justify-between items-center w-full">
-              <h3 className="font-bold text-sm text-brand-purple uppercase tracking-wider">Photo A (Earlier)</h3>
+              <h3 className="font-bold text-sm text-gold uppercase tracking-wider">Photo A (Earlier)</h3>
               {photoA && (
                 <span className="text-xs text-dark-muted font-bold">
                   {new Date(photoA.date).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}
@@ -178,7 +178,7 @@ export default function ProgressPhotos({ userId, setView }) {
               )}
             </div>
             
-            <div className="relative aspect-[3/4] w-full max-w-[280px] bg-dark-border/10 rounded-2xl overflow-hidden border border-white/5 flex items-center justify-center">
+            <div className="relative aspect-[3/4] w-full max-w-[280px] bg-dark-card rounded-2xl overflow-hidden border border-gold/20 flex items-center justify-center">
               {photoA ? (
                 <>
                   <img 
@@ -189,7 +189,7 @@ export default function ProgressPhotos({ userId, setView }) {
                   {showGrid && (
                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 pointer-events-none z-10">
                       {[...Array(12)].map((_, i) => (
-                        <div key={i} className="border border-brand-purple/15"></div>
+                        <div key={i} className="border border-gold/25"></div>
                       ))}
                     </div>
                   )}
@@ -203,7 +203,7 @@ export default function ProgressPhotos({ userId, setView }) {
           {/* Photo B Box */}
           <div className="glass p-6 rounded-3xl border border-white/5 space-y-4 flex flex-col items-center">
             <div className="flex justify-between items-center w-full">
-              <h3 className="font-bold text-sm text-brand-mint uppercase tracking-wider">Photo B (Current)</h3>
+              <h3 className="font-bold text-sm text-brand-accent uppercase tracking-wider">Photo B (Current)</h3>
               {photoB && (
                 <span className="text-xs text-dark-muted font-bold">
                   {new Date(photoB.date).toLocaleDateString(undefined, {month: 'long', day: 'numeric', year: 'numeric'})}
@@ -222,7 +222,7 @@ export default function ProgressPhotos({ userId, setView }) {
                   {showGrid && (
                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-4 pointer-events-none z-10">
                       {[...Array(12)].map((_, i) => (
-                        <div key={i} className="border border-brand-mint/15"></div>
+                        <div key={i} className="border border-brand-accent/15"></div>
                       ))}
                     </div>
                   )}
@@ -239,7 +239,7 @@ export default function ProgressPhotos({ userId, setView }) {
         <div className="glass p-8 rounded-3xl border border-white/5 space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <span className="text-xs font-bold text-brand-purple tracking-widest uppercase block mb-1">Upload Archive</span>
+              <span className="text-xs font-bold text-brand-primary tracking-widest uppercase block mb-1">Upload Archive</span>
               <h2 className="text-xl font-bold">Photo History</h2>
             </div>
             <span className="text-xs text-dark-muted font-bold uppercase">Click photo to place in workspace</span>
@@ -255,7 +255,7 @@ export default function ProgressPhotos({ userId, setView }) {
                     key={ph.id}
                     onClick={() => selectPhoto(ph)}
                     className={`aspect-[3/4] rounded-xl overflow-hidden border-2 cursor-pointer transition-all relative group ${
-                      isSelectedA ? 'border-brand-purple scale-95' : (isSelectedB ? 'border-brand-mint scale-95' : 'border-transparent hover:border-white/20')
+                      isSelectedA ? 'border-brand-primary scale-95' : (isSelectedB ? 'border-brand-accent scale-95' : 'border-transparent hover:border-white/20')
                     }`}
                   >
                     <img 
@@ -266,7 +266,7 @@ export default function ProgressPhotos({ userId, setView }) {
                     {/* Delete button (displays on hover) */}
                     <button
                       onClick={(e) => handleDeletePhoto(e, ph.id)}
-                      className="absolute top-2 right-2 p-1.5 bg-brand-coral/95 hover:bg-brand-coral text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 shadow-md hover:scale-105 active:scale-95"
+                      className="absolute top-2 right-2 p-1.5 bg-brand-secondary/95 hover:bg-brand-secondary text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 shadow-md hover:scale-105 active:scale-95"
                       title="Delete Photo"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

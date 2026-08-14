@@ -3,16 +3,17 @@ import cv2
 import mediapipe as mp
 
 class PoseDetector:
-    def __init__(self, mode=False, upBody=False, smooth=True, detectionCon=0.3, trackCon=0.3):
+    def __init__(self, mode=False, upBody=False, smooth=True, detectionCon=0.5, trackCon=0.5):
         self.mpDraw = mp.solutions.drawing_utils
         self.mpPose = mp.solutions.pose
         self.pose = self.mpPose.Pose(
             static_image_mode=mode,
-            model_complexity=0,
+            model_complexity=1,
             smooth_landmarks=smooth,
             min_detection_confidence=detectionCon,
             min_tracking_confidence=trackCon
         )
+        self.results = None
 
     def findPose(self, img, draw=True):
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

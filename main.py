@@ -1,5 +1,6 @@
 # main.py
 import cv2
+import numpy as np
 import os  # 🔥 Added to check if video files exist
 import argparse
 import time
@@ -109,7 +110,7 @@ def save_workout_session(user_id, exercise, reps, sets, duration_mins, accuracy_
 cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
 fullscreen_set = False
 
-import numpy as np
+
 loading_frame = np.zeros((720, 1280, 3), dtype=np.uint8)
 cv2.putText(loading_frame, "Initializing AI Gym Trainer...", (340, 320), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 255, 255), 3)
 cv2.putText(loading_frame, "Loading camera stream, please wait...", (360, 380), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (200, 200, 200), 2)

@@ -56,10 +56,6 @@ if not os.path.exists(UPLOAD_DIR):
 
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-@app.get("/")
-def read_root():
-    return {"status": "online", "message": "AI Gym Trainer Backend API Live", "version": "1.0.0"}
-
 
 # --- AUTH & REGISTRATION ---
 
@@ -181,40 +177,11 @@ def get_profile(user_id: int, db: Session = Depends(get_db)):
 def get_dashboard_summary(user_id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        # Create default user on the fly if not exists
-        user = models.User(id=user_id, name=f"Athlete_{user_id}", email=f"user_{user_id}@gym.com", password="password123")
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
+        raise HTTPException(status_code=404, detail="User not found")
+        
     profile = user.profile
     if not profile:
-        # Create default profile on the fly if not exists
-        metrics = calculate_profile_metrics(age=25, gender="Male", height=175, weight=75, goal="Muscle Gain")
-        profile = models.UserProfile(
-            user_id=user.id,
-            age=25,
-            gender="Male",
-            height=175,
-            weight=75,
-            goal="Muscle Gain",
-            experience="Intermediate",
-            equipment="Dumbbell",
-            injury="None",
-            workout_days=4,
-            diet_pref="Non-Veg",
-            bmi=metrics["bmi"],
-            body_fat_est=metrics["body_fat_est"],
-            target_calories=metrics["target_calories"],
-            target_protein=metrics["target_protein"],
-            target_water=metrics["target_water"],
-            sleep_hours=metrics["sleep_hours"],
-            target_weight=metrics["target_weight"],
-            goal_time_weeks=metrics["goal_time_weeks"]
-        )
-        db.add(profile)
-        db.commit()
-        db.refresh(profile)
+        raise HTTPException(status_code=400, detail="Onboarding not completed")
 
     # Fetch daily nutrition intake for today
     today = datetime.date.today()
@@ -618,29 +585,25 @@ def delete_progress_photo(photo_id: int, db: Session = Depends(get_db)):
 @app.websocket("/ws/track/{user_id}")
 async def websocket_tracking_endpoint(websocket: WebSocket, user_id: int):
     await websocket.accept()
+    
     session = WorkoutSocketSession()
     
-    import json
-    while True:
-        try:
-            data_str = await websocket.receive_text()
-            data = json.loads(data_str)
+    try:
+        while True:
+            # Receive data from client
+            data = await websocket.receive_json()
             
             event = data.get("event")
             if event == "config":
+                # User starts an exercise
                 exercise_name = data.get("exercise", "")
                 session.set_exercise(exercise_name)
                 await websocket.send_json({"status": "ready", "exercise": exercise_name})
                 
-            elif event == "client_landmarks":
-                landmarks_list = data.get("landmarks", [])
-                if "exercise" in data:
-                    session.set_exercise(data.get("exercise"))
-                result = session.process_client_landmarks(landmarks_list)
-                await websocket.send_json(result)
-
             elif event == "frame":
                 image_b64 = data.get("image", "")
+                
+                # Check for updates from frontend (if rest or sets changes)
                 if "exercise" in data:
                     session.set_exercise(data.get("exercise"))
                     
@@ -648,21 +611,16 @@ async def websocket_tracking_endpoint(websocket: WebSocket, user_id: int):
                 await websocket.send_json(result)
                 
             elif event == "finish":
+                # Session complete, send final stats
                 summary = session.get_summary_metrics()
                 await websocket.send_json({"event": "summary", "data": summary})
-
-        except WebSocketDisconnect:
-            print(f"WebSocket client {user_id} disconnected")
-            break
-        except Exception as e:
-            print(f"Frame processing error: {e}")
-            try:
-                await websocket.send_json({
-                    "verified": False,
-                    "landmarks": [],
-                    "message": "Analyzing pose...",
-                    "active_angle": 0,
-                    "warning": ""
-                })
-            except:
-                break
+                
+    except WebSocketDisconnect:
+        # Gracefully handle disconnects
+        pass
+    except Exception as e:
+        print(f"WebSocket error: {str(e)}")
+        try:
+            await websocket.send_json({"error": str(e)})
+        except:
+            pass

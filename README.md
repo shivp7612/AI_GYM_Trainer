@@ -12,7 +12,7 @@ An end-to-end, AI-powered computer vision fitness application that monitors exer
 
 ## ✨ Features
 
-- 🏋️ **60 FPS Real-Time AR Skeleton Overlay**: Hybrid computer vision pipeline using WebAssembly MediaPipe Pose for zero-latency in-browser body joint tracking.
+- 🏋️ **Real-Time AR Skeleton Overlay**: Streams optimized webcam frames via WebSockets to a Python backend, where MediaPipe and OpenCV perform low-latency posture tracking.
 - 📐 **Live Joint Angle & ROM Tracking**: Calculates exact joint flexions (elbows, knees, hips, shoulders) and Range of Motion (ROM %) frame-by-frame.
 - 🚫 **Posture Verification & Cheating Prevention**: Exercises only count repetitions when performed in strict, valid form.
 - 🗣️ **Live Voice Guidance & Real-Time Feedback**: Audio coaching and screen alerts tailored to the selected exercise.
@@ -27,7 +27,7 @@ An end-to-end, AI-powered computer vision fitness application that monitors exer
 ### Frontend
 - **Framework**: React 19 + Vite
 - **Styling**: Vanilla CSS + Tailwind CSS (Glassmorphic dark design system)
-- **Computer Vision**: `@mediapipe/pose` & `@mediapipe/camera_utils`
+- **Webcam Streaming**: HTML5 Canvas & WebSockets
 - **Charts & Icons**: Recharts & Lucide React
 
 ### Backend
@@ -96,7 +96,7 @@ Frontend web application will run at: `http://localhost:5173`
 AI_GYM_Trainer/
 ├── backend/
 │   ├── ai_logic/
-│   │   ├── biomechanics.py       # Joint stress & fatigue analyzer
+│   │   ├── fatigue.py            # Joint stress & fatigue analyzer
 │   │   ├── chatbot.py            # AI Fitness assistant response engine
 │   │   ├── planner.py            # Custom workout & diet plan generator
 │   │   ├── readiness.py          # Daily training readiness score calculator

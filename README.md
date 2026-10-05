@@ -1,59 +1,69 @@
-# ⚡ AI Gym Trainer - Real-Time Posture Analytics & Injury Prevention
+# AI Gym Trainer
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://ai-gym-trainer-git-main-shivprasadtlengli39-2300s-projects.vercel.app)
-[![Backend Status](https://img.shields.io/badge/Backend%20API-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://ai-gym-backend-tvnk.onrender.com)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![React](https://img.shields.io/badge/React-19.0-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+A real-time computer vision fitness assistant that tracks exercise form, counts repetitions, monitors fatigue, and provides live feedback using MediaPipe and OpenCV.
 
-An end-to-end, AI-powered computer vision fitness application that monitors exercise form, tracks repetitions, calculates active joint angles and range of motion (ROM) in real time, and prevents workout injuries using biomechanics analysis and instant voice coaching.
+Built with a **FastAPI** backend and a **React (Vite)** frontend, featuring real-time WebSocket communication and a dual-mode tracking architecture.
 
 ---
 
-## ✨ Features
+## Features
 
-- 🏋️ **Real-Time AR Skeleton Overlay**: Streams optimized webcam frames via WebSockets to a Python backend, where MediaPipe and OpenCV perform low-latency posture tracking.
-- 📐 **Live Joint Angle & ROM Tracking**: Calculates exact joint flexions (elbows, knees, hips, shoulders) and Range of Motion (ROM %) frame-by-frame.
-- 🚫 **Posture Verification & Cheating Prevention**: Exercises only count repetitions when performed in strict, valid form.
-- 🗣️ **Live Voice Guidance & Real-Time Feedback**: Audio coaching and screen alerts tailored to the selected exercise.
-- 📊 **Interactive Dashboard & Readiness Analytics**: Tracks daily nutrition, water intake, workout streaks, fatigue levels, and joint stress indicators.
-- 📄 **Automated PDF Workout Reports**: Generates detailed PDF summaries of workout performance, accuracy, and biomechanics risk scores.
-- 📱 **Responsive Desktop & Mobile Layout**: Full-screen AR workout mode tailored for smartphones and desktop cameras.
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Framework**: React 19 + Vite
-- **Styling**: Vanilla CSS + Tailwind CSS (Glassmorphic dark design system)
-- **Webcam Streaming**: HTML5 Canvas & WebSockets
-- **Charts & Icons**: Recharts & Lucide React
-
-### Backend
-- **Framework**: FastAPI (Python 3.10+) + Uvicorn
-- **ORM & Database**: SQLAlchemy + SQLite
-- **Computer Vision & Biomechanics**: OpenCV (Headless) + MediaPipe Python
-- **PDF Generation**: ReportLab
-- **Real-Time Streaming**: WebSockets (`wss://`)
+- **Live Skeleton Tracking**: Uses MediaPipe Pose to detect 33 body landmarks from your webcam stream, drawing a live pose overlay on screen so you can see your body alignment in real time.
+- **Joint Angle & ROM Calculation**: Measures the exact angles at your elbows, knees, hips, and shoulders during each movement to check if you are completing the full range of motion.
+- **Posture Verification & Anti-Cheat**: Ensures you are performing the correct exercise before reps start counting. For example, if you choose squats but start doing bicep curls, the system recognizes the mismatch and pauses counting until proper form is detected.
+- **Real-Time Voice & Screen Alerts**: Provides immediate voice corrections and on-screen tips (like "extend fully" or "good depth") so you don't have to constantly look down or touch your screen mid-set.
+- **Daily Dashboard & Readiness Score**: Lets you log daily water, protein, and calorie intake, tracks your workout streaks, and includes a pre-workout readiness assessment to check fatigue before exercising.
+- **PDF Workout Summaries**: Automatically generates a downloadable PDF report after each session showing your total sets, reps, average form accuracy, calories burned, and joint stress levels.
+- **Responsive Web Interface**: Works on both desktop browsers and mobile devices with a clean, full-screen workout view.
 
 ---
 
-## 🚀 Live Deployment
+## Architecture & How It Works
 
-- **Frontend App**: [https://ai-gym-trainer-git-main-shivprasadtlengli39-2300s-projects.vercel.app](https://ai-gym-trainer-git-main-shivprasadtlengli39-2300s-projects.vercel.app)
-- **Backend API**: [https://ai-gym-backend-tvnk.onrender.com](https://ai-gym-backend-tvnk.onrender.com)
+The project supports two execution modes:
+
+### 1. Web Tracking (Browser + WebSocket)
+- The React frontend captures webcam frames onto a hidden `640x480` canvas.
+- Frames are compressed to JPEG (50% quality, ~20 KB per frame) and sent over a WebSocket connection at **~7.5 FPS (130ms intervals)**.
+- This bandwidth optimization keeps upstream network usage under 200 KB/s while giving the backend MediaPipe pipeline enough temporal resolution to track movement cleanly without server congestion.
+- The FastAPI backend computes 33 3D pose landmarks, evaluates angles and fatigue, and streams joint coordinates and metrics back to the client for canvas rendering.
+
+### 2. Desktop Mode (Standalone OpenCV)
+- A local Python engine (`main.py`) running OpenCV with DirectShow on Windows.
+- Processes uncompressed 720p video at the webcam's native rate (~30 FPS) with low input latency.
+- Directly syncs completed workout sessions, accuracy, and calories to the SQLite database.
 
 ---
 
-## 💻 Local Installation & Setup
+## Tech Stack
+
+- **Frontend**: React 19, Vite, Tailwind CSS, Lucide Icons, Recharts
+- **Backend**: Python 3.10+, FastAPI, Uvicorn, WebSockets
+- **Computer Vision**: MediaPipe Pose, OpenCV, NumPy
+- **Database & ORM**: SQLite, SQLAlchemy
+- **Reporting**: ReportLab (automated PDF session reports)
+
+---
+
+## Supported Exercises
+
+- **Chest**: Barbell Bench Press, Incline Dumbbell Press, Cable Fly / Pec Deck, Push-ups
+- **Back**: Barbell Row, Lat Pulldown, Pull-ups / Chin-ups, Seated Cable Row
+- **Shoulders**: Overhead Press, Lateral Raise, Front Raise
+- **Arms**: Bicep Curl, Tricep Pushdown, Overhead Extension, Dips
+- **Legs**: Squat, Leg Press, Romanian Deadlift, Calf Raise
+- **Core**: Crunches, Leg Raises, Russian Twists
+
+---
+
+## Getting Started
 
 ### Prerequisites
-- Python 3.10 or higher
-- Node.js 18 or higher
-- Git
+- Python 3.10+
+- Node.js 18+
+- A working webcam
 
-### 1. Clone Repository
+### 1. Clone the repository
 ```bash
 git clone https://github.com/shivp7612/AI_GYM_Trainer.git
 cd AI_GYM_Trainer
@@ -61,71 +71,70 @@ cd AI_GYM_Trainer
 
 ### 2. Backend Setup
 ```bash
-# Create virtual environment (optional)
+# Create and activate virtual environment
 python -m venv venv
-# On Windows:
+
+# Windows
 venv\Scripts\activate
-# On macOS/Linux:
+# macOS/Linux
 source venv/bin/activate
 
-# Install backend dependencies
+# Install dependencies
 pip install -r backend/requirements.txt
 
-# Start FastAPI backend server
+# Run the FastAPI server
 uvicorn backend.main:app --reload --port 8000
 ```
-Backend server will run at: `http://localhost:8000`
+Backend will be live at `http://localhost:8000`.
 
 ### 3. Frontend Setup
 ```bash
 cd frontend
 
-# Install frontend dependencies
+# Install packages
 npm install
 
-# Run Vite dev server
+# Start Vite development server
 npm run dev
 ```
-Frontend web application will run at: `http://localhost:5173`
+Frontend will be live at `http://localhost:5173`.
+
+### 4. Running Desktop Tracker Directly (Optional)
+To run the native OpenCV tracking window locally:
+```bash
+python main.py --exercise squat --user_id 1
+```
 
 ---
 
-## 📁 Repository Structure
+## Project Structure
 
 ```
 AI_GYM_Trainer/
 ├── backend/
-│   ├── ai_logic/
-│   │   ├── fatigue.py            # Joint stress & fatigue analyzer
-│   │   ├── chatbot.py            # AI Fitness assistant response engine
-│   │   ├── planner.py            # Custom workout & diet plan generator
-│   │   ├── readiness.py          # Daily training readiness score calculator
-│   │   ├── report_generator.py   # ReportLab PDF generator
-│   │   └── socket_manager.py     # Real-time WebSocket frame & pose engine
-│   ├── database.py               # SQLite database session configuration
-│   ├── main.py                   # FastAPI REST routes & WebSocket endpoint
-│   ├── models.py                 # SQLAlchemy relational models
-│   ├── schemas.py                # Pydantic API response schemas
-│   └── requirements.txt          # Python dependencies
+│   ├── ai_logic/            # Pose processing, fatigue tracking, diet & workout plans
+│   ├── database.py          # SQLAlchemy SQLite connection
+│   ├── main.py              # FastAPI endpoints & WebSocket handler
+│   ├── models.py            # Database tables (Users, Profiles, Workouts)
+│   └── schemas.py           # Pydantic schemas
 ├── core/
-│   ├── exercise_verifier.py      # Category-based posture rules & verifiers
-│   └── pose_detector.py          # MediaPipe pose wrapper
+│   ├── exercise_verifier.py # Anti-cheat posture verifier
+│   └── pose_detector.py     # MediaPipe pose estimation wrapper
 ├── exercises/
-│   └── motion_profiler.py        # Exercise angle state machines & rep counters
+│   ├── exercise_dict.py     # Joint definitions and target angle thresholds
+│   └── motion_profiler.py   # State machine for rep counting
 ├── frontend/
-│   ├── public/
 │   ├── src/
-│   │   ├── components/           # Dashboard, WorkoutArea, Analytics, Onboarding
-│   │   ├── config.js             # API & WebSocket URL resolvers
-│   │   ├── App.jsx               # Main application component
-│   │   └── main.jsx              # React entry point
-│   ├── index.html                # MediaPipe WebAssembly CDN scripts
+│   │   ├── components/      # Dashboard, WorkoutArea, Analytics, Onboarding
+│   │   ├── App.jsx          # Router & state manager
+│   │   └── config.js        # API & WebSocket configuration
 │   └── package.json
+├── main.py                  # Standalone local OpenCV tracking application
 └── README.md
 ```
 
 ---
 
-## 📜 License
+## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License.
